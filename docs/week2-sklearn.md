@@ -80,6 +80,37 @@ Uit onderzoek blijkt dat vergelijkbare projecten zonder kansen/odds uitkomen op 
 
 ---
 
+## Odds toevoegen — 4 apr
+
+### Wat er is gebeurd
+RedOdds en BlueOdds toegevoegd als features aan alle modellen.
+Bookmakers verwerken enorm veel data in één getal:
+negatief = favoriet, positief = underdog.
+
+### Resultaat
+
+| Versie | Voor | Na | Stijging |
+|---|---|---|---|
+| V1 | 61.62% | 68.67% | +7.05% |
+| XGBoost | 57.81% | 65.33% | +7.52% |
+| V2 | 63.52% | 66.48% | +2.96% |
+| V3 | 62.95% | 68.29% | +5.34% |
+| V4 | 62.57% | 66.38% | +3.81% |
+
+Beste model: Random Forest v3 — 68.29%
+
+### Waarom is V3 beter dan V1?
+
+V1 gebruikt alleen 15 Dif kolommen (verschil tussen vechters).
+V3 heeft daarbovenop individuele stats per vechter, BetterRank, en 300 bomen in plaats van 100.
+V1 steeg meer in procenten door de odds (+7.05%) omdat de basis zwakker was.
+V3 eindigde hoger omdat de basis al sterker was.
+
+### Wat ik geleerd heb
+- V2/V3/V4 stegen minder dan V1 omdat ze al meer features hadden
+
+---
+
 ## Bronnen
 - [scikit-learn documentatie](https://scikit-learn.org/stable/)
 - [Random Forest uitleg (simpel)](https://www.youtube.com/results?search_query=random+forest+explained+simply)
