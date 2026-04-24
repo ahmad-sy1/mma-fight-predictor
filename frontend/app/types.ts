@@ -11,13 +11,19 @@ export interface Fighter {
   weightClass: string
   avgSigStr: number
   avgTD: number
+  // Extended stats
+  winStreak: number
+  loseStreak: number
+  longestWinStreak: number
+  koWins: number
+  subWins: number
+  decWins: number
+  totalRounds: number
+  titleBouts: number
+  sigStrAcc: number
+  tdAcc: number
+  avgSubAtt: number
   corner?: 'red' | 'blue'
-}
-
-export interface PredictionFactor {
-  label: string
-  sub: string
-  delta: number
 }
 
 export interface ModelInfo {
@@ -26,24 +32,35 @@ export interface ModelInfo {
   feature_count: number
 }
 
+export interface PredictionFactor {
+  label: string
+  sub: string
+  delta: number
+}
+
 export interface PredictionResult {
-  winner: {
-    name: string
-    record: string
-    reachCms: number
-    age: number
-    stance: string
-    corner: 'red' | 'blue'
-  }
-  loser: {
-    name: string
-    record: string
-    reachCms: number
-    age: number
-    stance: string
-  }
+  winner: Fighter & { corner: 'red' | 'blue' }
+  loser: Fighter
   confidence: number
   factors: PredictionFactor[]
   method: string
   round: string
+}
+
+export interface UpcomingFight {
+  event: string
+  date: string
+  venue: string
+  card: string
+  redFighter: string
+  blueFighter: string
+}
+
+export interface UpcomingPrediction {
+  fight: UpcomingFight
+  redFighter: Fighter
+  blueFighter: Fighter
+  winnerCorner: 'red' | 'blue'
+  confidence: number
+  factors: PredictionFactor[]
 }

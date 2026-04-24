@@ -1,48 +1,43 @@
 'use client'
 
-import type { ReactNode } from 'react'
+interface Props {
+  page: string
+  setPage: (p: string) => void
+}
 
-export default function Header(): ReactNode {
+export default function Header({ page, setPage }: Props) {
   return (
     <header style={{
-      background: '#fff',
-      borderBottom: '2px solid #0a0a0a',
-      padding: '0 48px',
-      height: 64,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      position: 'sticky',
-      top: 0,
-      zIndex: 50,
+      padding: '18px 32px',
+      borderBottom: '1px solid var(--line)',
+      background: 'var(--surface)',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      position: 'sticky', top: 0, zIndex: 50,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
-          width: 10, height: 10,
-          background: '#dc2626',
-          borderRadius: '50%',
-        }}/>
-        <span style={{
-          fontFamily: 'var(--font-bebas)',
-          fontSize: 22,
-          letterSpacing: '0.08em',
-          color: '#0a0a0a',
-        }}>
-          FIGHT ORACLE
+          width: 30, height: 30, borderRadius: 8, background: 'var(--accent)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'white', fontWeight: 800, fontSize: 16,
+        }}>F</div>
+        <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.01em' }}>
+          Fight Oracle
         </span>
       </div>
 
-      <nav style={{ display: 'flex', gap: 32 }}>
-        {['Predict', 'About'].map((item, i) => (
-          <a key={item} href="#" style={{
-            fontSize: 13,
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            textDecoration: 'none',
-            color: i === 0 ? '#dc2626' : '#6b6b6b',
-            borderBottom: i === 0 ? '2px solid #dc2626' : '2px solid transparent',
-            paddingBottom: 2,
-          }}>{item}</a>
+      <nav style={{ display: 'flex', gap: 28 }}>
+        {[['predict', 'Predict'], ['upcoming', 'Upcoming'], ['about', 'About']].map(([key, name]) => (
+          <a
+            key={key}
+            href="#"
+            onClick={e => { e.preventDefault(); setPage(key) }}
+            style={{
+              color: page === key ? 'var(--ink)' : 'var(--ink-dim)',
+              textDecoration: 'none', fontSize: 14, fontWeight: 600,
+              borderBottom: page === key ? '2px solid var(--accent)' : '2px solid transparent',
+              paddingBottom: 4,
+            }}
+          >{name}</a>
         ))}
       </nav>
     </header>
