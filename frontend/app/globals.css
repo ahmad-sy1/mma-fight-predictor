@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0a0a0f;
+  --bg-raised: #121218;
+  --bg-card: #141419;
+  --line: #22222b;
+  --line-strong: #2e2e38;
+  --ink: #f4f4f7;
+  --ink-dim: #9a9aa8;
+  --ink-mute: #5a5a66;
+  --accent: #e8003d;
+  --accent-hot: #ff2e5c;
+  --gold: #f5a623;
+  --blue: #2e6bff;
+  --green: #18c58f;
+  --grain-op: 0.06;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
+  opacity: var(--grain-op);
+  mix-blend-mode: overlay;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px),
+    radial-gradient(1200px 600px at 50% -10%, rgba(232,0,61,0.14), transparent 60%),
+    radial-gradient(900px 500px at 15% 110%, rgba(245,166,35,0.06), transparent 60%);
+}
+
+.display {
+  font-family: var(--font-bebas), 'Bebas Neue', Impact, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.mono {
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
+}
+
+button, input { font-family: inherit; }
+input:focus { outline: none; }
+::selection { background: var(--accent); color: white; }
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232,0,61,0.55), 0 0 40px 0 rgba(232,0,61,0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(232,0,61,0), 0 0 80px 0 rgba(232,0,61,0.55); }
+}
+@keyframes scan {
+  0% { transform: translateY(-120%); }
+  100% { transform: translateY(120%); }
+}
+@keyframes blink { 50% { opacity: 0.2; } }
+@keyframes barFill { from { width: 0; } }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  43% { opacity: .6; }
+  44% { opacity: 1; }
+  46% { opacity: .4; }
+  47% { opacity: 1; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes marqueeScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.33%); }
 }
