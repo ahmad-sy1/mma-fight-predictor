@@ -2,22 +2,22 @@
 
 import { useState, useEffect, useRef } from 'react'
 
+const API_URL = 'http://localhost:8000'
+
 /* ========== TYPES ========== */
 interface Fighter {
   name: string
   record: string
-  reach: number
-  height: string
-  age: number
-  weight: string
-  koRate: number
+  wins: number
+  losses: number
   winRate: number
+  age: number
+  heightCms: number
+  reachCms: number
   stance: string
-  striking: number
-  grappling: number
-  cardio: number
-  chin: number
-  power: number
+  weightClass: string
+  avgSigStr: number
+  avgTD: number
   corner?: 'red' | 'blue'
 }
 
@@ -28,8 +28,21 @@ interface PredictionFactor {
 }
 
 interface PredictionResult {
-  winner: Fighter
-  loser: Fighter
+  winner: {
+    name: string
+    record: string
+    reachCms: number
+    age: number
+    stance: string
+    corner: 'red' | 'blue'
+  }
+  loser: {
+    name: string
+    record: string
+    reachCms: number
+    age: number
+    stance: string
+  }
   confidence: number
   factors: PredictionFactor[]
   method: string
@@ -44,7 +57,7 @@ interface Tweaks {
   resultLayout: 'stack' | 'modal'
 }
 
-/* ========== DATA ========== */
+/* ========== CONSTANTS ========== */
 const ACCENTS = {
   red:   { hex: '#e8003d', hot: '#ff2e5c', name: 'Electric Red' },
   gold:  { hex: '#f5a623', hot: '#ffc04a', name: 'Fight Gold' },
@@ -52,81 +65,11 @@ const ACCENTS = {
   green: { hex: '#18c58f', hot: '#4ee0ae', name: 'Toxic Green' },
 }
 
-const FIGHTERS: Fighter[] = [
-  { name: 'Jon Jones',         record: '27-1-0',  reach: 84.5, height: '6\'4"', age: 38, weight: 'Heavyweight',   koRate: 37, winRate: 96,  stance: 'Orthodox', striking: 92, grappling: 94, cardio: 88, chin: 95, power: 86 },
-  { name: 'Islam Makhachev',   record: '26-1-0',  reach: 70,   height: '5\'10"',age: 34, weight: 'Lightweight',   koRate: 18, winRate: 96,  stance: 'Southpaw', striking: 78, grappling: 97, cardio: 93, chin: 87, power: 74 },
-  { name: 'Alex Pereira',      record: '12-2-0',  reach: 79,   height: '6\'4"', age: 38, weight: 'Light Heavy',   koRate: 67, winRate: 85,  stance: 'Orthodox', striking: 95, grappling: 58, cardio: 82, chin: 88, power: 97 },
-  { name: 'Ilia Topuria',      record: '17-0-0',  reach: 69,   height: '5\'7"', age: 29, weight: 'Lightweight',   koRate: 59, winRate: 100, stance: 'Orthodox', striking: 91, grappling: 82, cardio: 86, chin: 90, power: 93 },
-  { name: 'Dricus Du Plessis', record: '23-2-0',  reach: 76,   height: '6\'1"', age: 32, weight: 'Middleweight',  koRate: 48, winRate: 92,  stance: 'Orthodox', striking: 84, grappling: 85, cardio: 89, chin: 93, power: 85 },
-  { name: 'Leon Edwards',      record: '22-4-0',  reach: 74,   height: '6\'0"', age: 34, weight: 'Welterweight',  koRate: 32, winRate: 85,  stance: 'Southpaw', striking: 88, grappling: 81, cardio: 91, chin: 86, power: 79 },
-  { name: 'Merab Dvalishvili', record: '18-4-0',  reach: 65,   height: '5\'6"', age: 35, weight: 'Bantamweight',  koRate: 14, winRate: 82,  stance: 'Orthodox', striking: 76, grappling: 93, cardio: 99, chin: 92, power: 72 },
-  { name: "Sean O'Malley",     record: '18-2-0',  reach: 72,   height: '5\'11"',age: 31, weight: 'Bantamweight',  koRate: 55, winRate: 90,  stance: 'Switch',   striking: 90, grappling: 68, cardio: 83, chin: 79, power: 84 },
-  { name: 'Khamzat Chimaev',   record: '14-0-0',  reach: 75,   height: '6\'2"', age: 31, weight: 'Middleweight',  koRate: 43, winRate: 100, stance: 'Orthodox', striking: 85, grappling: 94, cardio: 78, chin: 84, power: 88 },
-  { name: 'Tom Aspinall',      record: '15-3-0',  reach: 78,   height: '6\'5"', age: 32, weight: 'Heavyweight',   koRate: 73, winRate: 83,  stance: 'Orthodox', striking: 89, grappling: 86, cardio: 85, chin: 83, power: 94 },
-  { name: 'Magomed Ankalaev',  record: '20-1-1',  reach: 75,   height: '6\'3"', age: 33, weight: 'Light Heavy',   koRate: 45, winRate: 91,  stance: 'Orthodox', striking: 87, grappling: 82, cardio: 90, chin: 90, power: 86 },
-  { name: 'Max Holloway',      record: '26-8-0',  reach: 69,   height: '5\'11"',age: 34, weight: 'Featherweight', koRate: 38, winRate: 76,  stance: 'Orthodox', striking: 94, grappling: 74, cardio: 96, chin: 96, power: 80 },
-]
-
-const QUICK_FIGHTS: [string, string][] = [
-  ['Jon Jones', 'Tom Aspinall'],
-  ['Islam Makhachev', 'Ilia Topuria'],
-  ['Alex Pereira', 'Magomed Ankalaev'],
-  ['Dricus Du Plessis', 'Khamzat Chimaev'],
-  ["Sean O'Malley", 'Merab Dvalishvili'],
-]
-
-function fuzzyFind(q: string): Fighter | null {
-  if (!q) return null
-  const norm = q.trim().toLowerCase()
-  let best: Fighter | null = null
-  let bestScore = 0
-  for (const f of FIGHTERS) {
-    const name = f.name.toLowerCase()
-    if (name === norm) return f
-    if (name.startsWith(norm) && norm.length > bestScore) { best = f; bestScore = norm.length; continue }
-    if (name.includes(norm) && norm.length > 2 && norm.length * 0.7 > bestScore) { best = f; bestScore = norm.length * 0.7; continue }
-    const last = name.split(' ').slice(-1)[0]
-    if (last.startsWith(norm) && norm.length > 2 && norm.length * 0.8 > bestScore) { best = f; bestScore = norm.length * 0.8 }
-  }
-  return best
-}
-
-/* ========== PREDICTION ========== */
-function runLocalPrediction(a: Fighter, b: Fighter): PredictionResult {
-  const weights = { striking: 0.22, grappling: 0.18, cardio: 0.14, chin: 0.12, power: 0.14, reach: 0.08, winRate: 0.06, age: 0.06 }
-  const score = (f: Fighter) =>
-    f.striking * weights.striking + f.grappling * weights.grappling + f.cardio * weights.cardio +
-    f.chin * weights.chin + f.power * weights.power + f.reach * weights.reach +
-    f.winRate * weights.winRate + (40 - f.age) * weights.age
-  const sa = score(a), sb = score(b)
-  const diff = sa - sb
-  const winner = diff >= 0 ? a : b
-  const loser = diff >= 0 ? b : a
-  const conf = Math.min(92, Math.max(52, 50 + Math.abs(diff) * 1.1))
-
-  const factors: PredictionFactor[] = []
-  const metrics: [keyof Fighter, string, string][] = [
-    ['striking',  'Striking accuracy',  'Precision & volume in exchanges'],
-    ['grappling', 'Grappling control',  'Takedown def. & ground game'],
-    ['cardio',    'Cardio ceiling',     'Pace management into rds 4-5'],
-    ['chin',      'Durability',         'Recovery from clean shots'],
-    ['power',     'Knockout power',     'Single-strike finishing threat'],
-  ]
-  for (const [k, label, sub] of metrics) {
-    const delta = (winner[k] as number) - (loser[k] as number)
-    if (delta > 0) factors.push({ label, sub, delta })
-  }
-  if (winner.reach - loser.reach > 2) {
-    factors.push({ label: 'Reach advantage', sub: `${(winner.reach - loser.reach).toFixed(1)}" longer frame`, delta: winner.reach - loser.reach })
-  }
-  factors.sort((x, y) => y.delta - x.delta)
-
-  let method = 'Decision'
-  if (winner.koRate > 50 && winner.power - loser.chin > 0) method = 'KO/TKO'
-  else if (winner.grappling - loser.grappling > 12 && winner.grappling > 85) method = 'Submission'
-  const roundGuess = method === 'Decision' ? 'Rd 5 (25:00)' : method === 'KO/TKO' ? `Rd ${2 + (winner.power > 90 ? 0 : 1)}` : 'Rd 3'
-
-  return { winner, loser, confidence: Math.round(conf), factors: factors.slice(0, 3), method, round: roundGuess }
+function formatHeight(cm: number): string {
+  const totalInches = cm / 2.54
+  const feet = Math.floor(totalInches / 12)
+  const inches = Math.round(totalInches % 12)
+  return `${feet}'${inches}"`
 }
 
 /* ========== ICONS ========== */
@@ -232,8 +175,8 @@ function Header({ onToggleTweaks, tweaksOpen }: { onToggleTweaks: () => void; tw
 /* ========== MARQUEE ========== */
 function Marquee() {
   const items = [
-    'UFC 314 MAIN CARD · SAT', 'TOPURIA -235', 'PEREIRA vs ANKALAEV II', 'HEAVYWEIGHT TITLE',
-    'ASPINALL +165', 'PPV ACCURACY · 78.2%', 'LIVE ODDS SYNCED', 'LAST UPDATE · 00:03:12 AGO',
+    'UFC 314 MAIN CARD · SAT', 'ML MODEL ACTIVE', 'RANDOM FOREST v2', 'ACCURACY · 63.52%',
+    '5,246 FIGHTS ANALYZED', 'LIVE PREDICTIONS', 'STATS FROM UFC DATASET', 'FIGHT ORACLE ENGINE',
   ]
   return (
     <div style={{
@@ -315,36 +258,50 @@ function Silhouette({ corner, filled, stance }: { corner: 'red' | 'blue'; filled
 
 /* ========== FIGHTER CARD ========== */
 function FighterCard({
-  corner, fighter, query, setQuery, onCommit,
+  corner, fighter, query, setQuery, onCommit, loadingFighter,
 }: {
   corner: 'red' | 'blue'
   fighter: Fighter | null
   query: string
   setQuery: (q: string) => void
   onCommit: (q: string) => void
+  loadingFighter: boolean
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
   const [focus, setFocus] = useState(false)
-  const [suggestions, setSuggestions] = useState<Fighter[]>([])
+  const [suggestions, setSuggestions] = useState<string[]>([])
   const accentColor = corner === 'red' ? 'var(--accent)' : 'var(--blue)'
 
+  // Debounced API autocomplete
   useEffect(() => {
-    if (!query || fighter) { setSuggestions([]); return }
-    const q = query.toLowerCase()
-    setSuggestions(FIGHTERS.filter(f => f.name.toLowerCase().includes(q)).slice(0, 4))
+    if (!query || fighter || query.length < 2) { setSuggestions([]); return }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_URL}/fighters?q=${encodeURIComponent(query)}`)
+        const data = await res.json()
+        setSuggestions(data.fighters ?? [])
+      } catch {
+        setSuggestions([])
+      }
+    }, 300)
+    return () => clearTimeout(timer)
   }, [query, fighter])
+
+  const reachIn = fighter ? (fighter.reachCms / 2.54).toFixed(1) : null
 
   const stats = fighter
     ? [
-        { label: 'REACH',   value: `${fighter.reach}"`,  bar: fighter.reach / 90 },
-        { label: 'WIN %',   value: `${fighter.winRate}%`, bar: fighter.winRate / 100 },
-        { label: 'KO RATE', value: `${fighter.koRate}%`, bar: fighter.koRate / 100 },
+        { label: 'REACH',   value: `${reachIn}"`,              bar: fighter.reachCms / 230 },
+        { label: 'WIN %',   value: `${fighter.winRate}%`,       bar: fighter.winRate / 100 },
+        { label: 'SIG STR', value: fighter.avgSigStr.toFixed(1), bar: Math.min(fighter.avgSigStr / 8, 1) },
       ]
     : [
         { label: 'REACH',   value: '— —', bar: 0 },
         { label: 'WIN %',   value: '— —', bar: 0 },
-        { label: 'KO RATE', value: '— —', bar: 0 },
+        { label: 'SIG STR', value: '— —', bar: 0 },
       ]
+
+  const heightStr = fighter ? formatHeight(fighter.heightCms) : '—'
+  const wgtStr    = fighter ? (fighter.weightClass.split(' ').pop() ?? '—').slice(0, 6) : '—'
 
   return (
     <div style={{
@@ -374,11 +331,15 @@ function FighterCard({
           FIGHTER NAME
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-          <span style={{ color: fighter ? accentColor : 'var(--ink-mute)' }}><Icons.Search s={16}/></span>
+          <span style={{ color: fighter ? accentColor : 'var(--ink-mute)' }}>
+            {loadingFighter
+              ? <div style={{ width: 16, height: 16, border: '2px solid var(--ink-mute)', borderTopColor: accentColor, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}/>
+              : <Icons.Search s={16}/>
+            }
+          </span>
           <input
-            ref={inputRef}
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => { setQuery(e.target.value); }}
             onFocus={() => setFocus(true)}
             onBlur={() => setTimeout(() => setFocus(false), 180)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onCommit(query); setFocus(false) } }}
@@ -389,33 +350,32 @@ function FighterCard({
               fontFamily: 'var(--font-bebas), sans-serif', textTransform: 'uppercase',
             }}
           />
-          {fighter && (
+          {fighter && !loadingFighter && (
             <span style={{ color: accentColor, display: 'flex', alignItems: 'center', gap: 4 }} className="mono">
               <Icons.Check s={14}/>
             </span>
           )}
         </div>
+
+        {/* Dropdown suggestions */}
         {focus && suggestions.length > 0 && (
           <div style={{
             position: 'absolute', top: '100%', left: 14, right: 14, marginTop: 4, zIndex: 30,
             background: '#191920', border: '1px solid var(--line-strong)',
             boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
           }}>
-            {suggestions.map(s => (
+            {suggestions.map(name => (
               <div
-                key={s.name}
-                onMouseDown={() => onCommit(s.name)}
+                key={name}
+                onMouseDown={() => { onCommit(name); setSuggestions([]) }}
                 style={{
                   padding: '9px 14px', cursor: 'pointer', borderBottom: '1px solid var(--line)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13,
+                  display: 'flex', alignItems: 'center', fontSize: 13,
                 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#202028' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
               >
-                <span style={{ fontWeight: 600 }}>{s.name}</span>
-                <span className="mono" style={{ fontSize: 10, color: 'var(--ink-mute)' }}>
-                  {s.weight.toUpperCase()} · {s.record}
-                </span>
+                <span style={{ fontWeight: 600 }}>{name}</span>
               </div>
             ))}
           </div>
@@ -425,10 +385,10 @@ function FighterCard({
       {/* meta row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid var(--line)' }}>
         {([
-          ['REC', fighter?.record ?? '0-0-0'],
-          ['WGT', fighter ? fighter.weight.split(' ')[0].slice(0, 3).toUpperCase() : '—'],
-          ['HT',  fighter?.height ?? '—'],
-          ['AGE', fighter?.age?.toString() ?? '—'],
+          ['REC',   fighter?.record ?? '0-0-0'],
+          ['WGT',   wgtStr],
+          ['HT',    heightStr],
+          ['AGE',   fighter?.age?.toString() ?? '—'],
         ] as [string, string][]).map(([k, v], i) => (
           <div key={k} style={{
             padding: '14px 10px', textAlign: 'center',
@@ -453,7 +413,7 @@ function FighterCard({
             </div>
             <div style={{ height: 3, background: '#1c1c24', position: 'relative', overflow: 'hidden' }}>
               <div style={{
-                height: '100%', width: `${s.bar * 100}%`,
+                height: '100%', width: `${Math.min(s.bar * 100, 100)}%`,
                 background: `linear-gradient(90deg, ${accentColor}, ${corner === 'red' ? 'var(--accent-hot)' : '#5a8bff'})`,
                 transition: 'width 600ms cubic-bezier(.2,.8,.2,1)',
                 boxShadow: fighter ? `0 0 10px ${accentColor}` : 'none',
@@ -577,7 +537,7 @@ function ResultSection({ result, onReset }: { result: PredictionResult; onReset:
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, borderBottom: '1px solid var(--line)', paddingBottom: 18 }}>
         <div>
           <div className="mono" style={{ fontSize: 10.5, letterSpacing: '0.28em', color: 'var(--accent)' }}>
-            ◆ ORACLE VERDICT / MODEL v2.6
+            ◆ ORACLE VERDICT / RF MODEL v2
           </div>
           <div className="display" style={{ fontSize: 44, lineHeight: 1, marginTop: 8, letterSpacing: '0.03em' }}>
             THE <span style={{ color: 'var(--accent)' }}>ORACLE</span> SAYS…
@@ -621,7 +581,7 @@ function ResultSection({ result, onReset }: { result: PredictionResult; onReset:
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 }}>
               <span className="mono" style={{ fontSize: 11, letterSpacing: '0.24em', color: 'var(--ink-mute)' }}>MODEL CONFIDENCE</span>
               <span className="display" style={{ fontSize: 52, lineHeight: 1, color: winnerRed ? 'var(--accent)' : 'var(--blue)' }}>
-                {confidence}<span style={{ fontSize: 24, color: 'var(--ink-dim)' }}>%</span>
+                {confidence.toFixed(1)}<span style={{ fontSize: 24, color: 'var(--ink-dim)' }}>%</span>
               </span>
             </div>
             <div style={{ height: 18, background: '#15151c', border: '1px solid var(--line)', position: 'relative', overflow: 'hidden' }}>
@@ -662,7 +622,7 @@ function ResultSection({ result, onReset }: { result: PredictionResult; onReset:
         {/* RIGHT: factors + tale of tape */}
         <div>
           <div className="mono" style={{ fontSize: 10.5, letterSpacing: '0.24em', color: 'var(--ink-mute)', marginBottom: 14 }}>
-            TOP 3 DECIDING FACTORS
+            TOP {factors.length} DECIDING FACTORS
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {factors.map((f, i) => (
@@ -703,10 +663,10 @@ function ResultSection({ result, onReset }: { result: PredictionResult; onReset:
               TALE OF THE TAPE
             </div>
             {([
-              ['Reach',  `${winner.reach}"`,  `${loser.reach}"`],
-              ['Record', winner.record,         loser.record],
-              ['Stance', winner.stance,          loser.stance],
-              ['Age',    String(winner.age),     String(loser.age)],
+              ['Reach',  `${(winner.reachCms / 2.54).toFixed(1)}"`,  `${(loser.reachCms / 2.54).toFixed(1)}"`],
+              ['Record', winner.record,                                loser.record],
+              ['Stance', winner.stance,                                loser.stance],
+              ['Age',    String(winner.age),                           String(loser.age)],
             ] as [string, string, string][]).map(([k, a, b]) => (
               <div key={k} style={{
                 display: 'grid', gridTemplateColumns: '1fr auto 1fr',
@@ -727,7 +687,7 @@ function ResultSection({ result, onReset }: { result: PredictionResult; onReset:
           ◆ STATISTICAL MODEL · NOT BETTING ADVICE · FIGHTING IS CHAOS
         </span>
         <span className="mono" style={{ fontSize: 10, color: 'var(--ink-mute)', letterSpacing: '0.18em' }}>
-          COMPUTED IN {(Math.random() * 0.8 + 0.4).toFixed(2)}s
+          RANDOM FOREST v2 · 63.52% ACCURACY
         </span>
       </div>
     </section>
@@ -817,19 +777,18 @@ export default function Home() {
     accent: 'blue', intensity: 'high', showGrain: true, scanlines: true, resultLayout: 'stack',
   })
   const [tweaksOpen, setTweaksOpen] = useState(false)
-  const [queryA, setQueryA] = useState('Jon Jones')
-  const [queryB, setQueryB] = useState('Tom Aspinall')
-  const [fighterA, setFighterA] = useState<Fighter | null>(() => {
-    const f = fuzzyFind('Jon Jones'); return f ? { ...f, corner: 'red' } : null
-  })
-  const [fighterB, setFighterB] = useState<Fighter | null>(() => {
-    const f = fuzzyFind('Tom Aspinall'); return f ? { ...f, corner: 'blue' } : null
-  })
+  const [queryA, setQueryA] = useState('')
+  const [queryB, setQueryB] = useState('')
+  const [fighterA, setFighterA] = useState<Fighter | null>(null)
+  const [fighterB, setFighterB] = useState<Fighter | null>(null)
+  const [loadingA, setLoadingA] = useState(false)
+  const [loadingB, setLoadingB] = useState(false)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<PredictionResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const resultRef = useRef<HTMLDivElement>(null)
 
-  // apply accent + grain tweaks to CSS vars
+  // Accent kleuren toepassen op CSS variabelen
   useEffect(() => {
     const a = ACCENTS[tweaks.accent]
     document.documentElement.style.setProperty('--accent', a.hex)
@@ -841,39 +800,106 @@ export default function Home() {
     setTweaks(prev => ({ ...prev, [k]: v }))
   }
 
-  const commitA = (q: string) => {
-    setQueryA(q)
-    const f = fuzzyFind(q)
-    setFighterA(f ? { ...f, corner: 'red' } : null)
-  }
-  const commitB = (q: string) => {
-    setQueryB(q)
-    const f = fuzzyFind(q)
-    setFighterB(f ? { ...f, corner: 'blue' } : null)
+  // Fetch fighter info from API when a name is committed
+  const commitA = async (name: string) => {
+    setQueryA(name)
+    setFighterA(null)
+    setResult(null)
+    if (!name.trim()) return
+    setLoadingA(true)
+    try {
+      const res = await fetch(`${API_URL}/fighters/${encodeURIComponent(name.trim())}`)
+      if (res.ok) {
+        const data = await res.json()
+        setFighterA({ ...data, corner: 'red' as const })
+      }
+    } catch { /* stil falen */ }
+    finally { setLoadingA(false) }
   }
 
-  const canPredict = !!fighterA && !!fighterB && fighterA.name !== fighterB.name
+  const commitB = async (name: string) => {
+    setQueryB(name)
+    setFighterB(null)
+    setResult(null)
+    if (!name.trim()) return
+    setLoadingB(true)
+    try {
+      const res = await fetch(`${API_URL}/fighters/${encodeURIComponent(name.trim())}`)
+      if (res.ok) {
+        const data = await res.json()
+        setFighterB({ ...data, corner: 'blue' as const })
+      }
+    } catch { /* stil falen */ }
+    finally { setLoadingB(false) }
+  }
 
-  const predict = async () => {
+  const canPredict = !!fighterA && !!fighterB && fighterA.name !== fighterB.name && !loadingA && !loadingB
+
+  const runPredict = async () => {
     if (!canPredict || !fighterA || !fighterB) return
     setLoading(true)
     setResult(null)
-    await new Promise(r => setTimeout(r, 1400))
-    const r = runLocalPrediction({ ...fighterA, corner: 'red' }, { ...fighterB, corner: 'blue' })
-    setLoading(false)
-    setResult(r)
-    setTimeout(() => {
-      const el = document.getElementById('result-anchor')
-      if (el) window.scrollTo({ top: el.offsetTop - 80, behavior: 'smooth' })
-    }, 100)
+    setError(null)
+
+    try {
+      const res = await fetch(`${API_URL}/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ red_fighter: fighterA.name, blue_fighter: fighterB.name }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.detail ?? 'Voorspelling mislukt')
+      }
+
+      const data = await res.json()
+
+      // API response mappen naar PredictionResult
+      const winnerIsRed = data.winner_corner === 'red'
+      const winnerInfo  = winnerIsRed ? data.red_fighter : data.blue_fighter
+      const loserInfo   = winnerIsRed ? data.blue_fighter : data.red_fighter
+
+      const r: PredictionResult = {
+        winner: {
+          name:     data.winner,
+          record:   winnerInfo.record,
+          reachCms: winnerInfo.reachCms,
+          age:      winnerInfo.age,
+          stance:   winnerInfo.stance,
+          corner:   data.winner_corner as 'red' | 'blue',
+        },
+        loser: {
+          name:     data.loser,
+          record:   loserInfo.record,
+          reachCms: loserInfo.reachCms,
+          age:      loserInfo.age,
+          stance:   loserInfo.stance,
+        },
+        confidence: data.confidence,
+        factors:    data.factors,
+        method:     data.method,
+        round:      data.round,
+      }
+
+      setResult(r)
+      setTimeout(() => {
+        const el = document.getElementById('result-anchor')
+        if (el) window.scrollTo({ top: el.offsetTop - 80, behavior: 'smooth' })
+      }, 100)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Er ging iets mis')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const reset = () => { setResult(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const reset = () => { setResult(null); setError(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
-  // cmd+enter shortcut
+  // Cmd+Enter sneltoets
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && canPredict && !loading) predict()
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && canPredict && !loading) runPredict()
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
@@ -896,14 +922,14 @@ export default function Home() {
               WHO WINS<br/>THE <span style={{ color: 'var(--accent)', textShadow: '0 0 40px rgba(232,0,61,0.35)', position: 'relative' }}>FIGHT</span>?
             </h1>
             <p style={{ color: 'var(--ink-dim)', fontSize: 16, marginTop: 18, maxWidth: 620, lineHeight: 1.5 }}>
-              Pick two fighters. Our model runs 10,000+ simulations across reach, pace,
-              striking accuracy, grappling control, and chin durability — and calls it.
+              Zoek twee UFC-vechters. Het Random Forest model analyseert hun historische statistieken
+              — striking, grappling, streaks, en meer — en voorspelt wie wint.
             </p>
           </div>
           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {([
-              ['MODEL ACCURACY', '78.2%', 'LAST 247 FIGHTS'],
-              ['FIGHTS ANALYZED', '12,840', 'UPDATED DAILY'],
+              ['MODEL ACCURACY', '63.52%', 'RANDOM FOREST v2'],
+              ['FIGHTS ANALYZED', '5,246', 'UFC DATASET'],
             ] as [string, string, string][]).map(([k, v, s]) => (
               <div key={k} style={{ borderLeft: '2px solid var(--accent)', paddingLeft: 14 }}>
                 <div className="mono" style={{ fontSize: 10, letterSpacing: '0.22em', color: 'var(--ink-mute)' }}>{k}</div>
@@ -916,32 +942,25 @@ export default function Home() {
 
         {/* FIGHTER ARENA */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 24, alignItems: 'stretch' }}>
-          <FighterCard corner="red"  fighter={fighterA} query={queryA} setQuery={setQueryA} onCommit={commitA}/>
+          <FighterCard corner="red"  fighter={fighterA} query={queryA} setQuery={q => { setQueryA(q); if (!q) setFighterA(null) }} onCommit={commitA} loadingFighter={loadingA}/>
           <VSCore active={canPredict && !loading} predicting={loading}/>
-          <FighterCard corner="blue" fighter={fighterB} query={queryB} setQuery={setQueryB} onCommit={commitB}/>
+          <FighterCard corner="blue" fighter={fighterB} query={queryB} setQuery={q => { setQueryB(q); if (!q) setFighterB(null) }} onCommit={commitB} loadingFighter={loadingB}/>
         </div>
 
         {/* PREDICT BUTTON */}
         <div style={{ marginTop: 24 }}>
-          <PredictButton enabled={canPredict} onClick={predict} loading={loading}/>
+          <PredictButton enabled={canPredict} onClick={runPredict} loading={loading}/>
         </div>
 
-        {/* QUICK FIGHTS */}
-        {!result && (
-          <div style={{ marginTop: 20, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span className="mono" style={{ fontSize: 10.5, letterSpacing: '0.22em', color: 'var(--ink-mute)' }}>QUICK FIGHTS:</span>
-            {QUICK_FIGHTS.map(([a, b]) => (
-              <button key={a + b} onClick={() => { commitA(a); commitB(b); setResult(null) }} style={{
-                background: 'transparent', border: '1px solid var(--line-strong)',
-                color: 'var(--ink-dim)', padding: '6px 12px', cursor: 'pointer',
-                fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', transition: 'all 160ms',
-              }}
-              onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.color = 'var(--ink)' }}
-              onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--line-strong)'; el.style.color = 'var(--ink-dim)' }}
-              >
-                {a.split(' ').slice(-1)[0]} <span style={{ color: 'var(--accent)', margin: '0 6px' }}>vs</span> {b.split(' ').slice(-1)[0]}
-              </button>
-            ))}
+        {/* ERROR STATE */}
+        {error && (
+          <div style={{
+            marginTop: 16, padding: '14px 20px',
+            border: '1px solid #e8003d44', background: '#1a0009',
+            color: 'var(--accent)', fontSize: 13, fontFamily: 'var(--font-mono), monospace',
+            letterSpacing: '0.06em',
+          }}>
+            ⚠ {error}
           </div>
         )}
 
@@ -974,8 +993,8 @@ export default function Home() {
         </div>
         <div className="mono" style={{ fontSize: 10, letterSpacing: '0.22em', color: 'var(--ink-mute)', display: 'flex', gap: 20 }}>
           <span>STATUS: <span style={{ color: 'var(--green)' }}>OPERATIONAL</span></span>
-          <span>MODEL: v2.6.1</span>
-          <span>API: 99.97% UPTIME</span>
+          <span>MODEL: RF v2</span>
+          <span>ACCURACY: 63.52%</span>
         </div>
       </footer>
 
