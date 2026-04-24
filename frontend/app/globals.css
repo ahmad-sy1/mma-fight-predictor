@@ -1,9 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --red: #dc2626;
-  --red-dark: #b91c1c;
-  --red-light: #fef2f2;
+  --bg: #e8e8e4;
+  --surface: #ffffff;
+  --line: #d0d0c8;
+  --line-strong: #b8b8b0;
+  --card-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px var(--line);
+  --ink: #141414;
+  --ink-dim: #6b6b64;
+  --ink-mute: #9a9a92;
+  --accent: #e8003d;
+  --accent-soft: #ffe8ee;
+  --blue: #2563eb;
+  --blue-soft: #e6efff;
 }
 
 * { box-sizing: border-box; }
@@ -11,21 +20,23 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: #f9f9f9;
-  color: #0a0a0a;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
 button, input { font-family: inherit; }
 input:focus { outline: none; }
-::selection { background: var(--red); color: white; }
+::selection { background: var(--accent); color: white; }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }

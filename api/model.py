@@ -109,8 +109,14 @@ def get_fighter_info(name: str) -> dict:
     def stat(rc, bc, default=0.0):
         return _mean_stat(name, rc, bc, default)
 
-    wins   = int(stat('RedWins', 'BlueWins'))
-    losses = int(stat('RedLosses', 'BlueLosses'))
+    def max_stat(rc: str, bc: str) -> float:
+        r = df.loc[df['RedFighter'] == name, rc].dropna() if rc in df.columns else pd.Series(dtype=float)
+        b = df.loc[df['BlueFighter'] == name, bc].dropna() if bc in df.columns else pd.Series(dtype=float)
+        combined = pd.concat([r, b])
+        return float(combined.max()) if len(combined) > 0 else 0.0
+
+    wins   = int(max_stat('RedWins', 'BlueWins'))
+    losses = int(max_stat('RedLosses', 'BlueLosses'))
     total  = wins + losses
 
     stances = []
@@ -126,19 +132,49 @@ def get_fighter_info(name: str) -> dict:
         wcs += df.loc[df['BlueFighter'] == name, 'WeightClass'].dropna().tolist()
     weight_class = max(set(wcs), key=wcs.count) if wcs else '—'
 
+    # Cumulative stats — use max (most recent value)
+    win_streak         = int(max_stat('RedCurrentWinStreak', 'BlueCurrentWinStreak'))
+    lose_streak        = int(max_stat('RedCurrentLoseStreak', 'BlueCurrentLoseStreak'))
+    longest_win_streak = int(max_stat('RedLongestWinStreak', 'BlueLongestWinStreak'))
+    ko_wins            = int(max_stat('RedWinsByKO', 'BlueWinsByKO'))
+    sub_wins           = int(max_stat('RedWinsBySubmission', 'BlueWinsBySubmission'))
+    total_rounds       = int(max_stat('RedTotalRoundsFought', 'BlueTotalRoundsFought'))
+    title_bouts        = int(max_stat('RedTotalTitleBouts', 'BlueTotalTitleBouts'))
+    dec_wins           = max(0, wins - ko_wins - sub_wins)
+
+    # Rate stats — use mean; multiply by 100 if stored as fraction (< 1.5)
+    def pct(rc, bc):
+        v = stat(rc, bc)
+        return round(min(v * 100 if v < 1.5 else v, 100), 1)
+
+    sig_str_acc = pct('RedAvgSigStrPct', 'BlueAvgSigStrPct')
+    td_acc      = pct('RedAvgTDPct', 'BlueAvgTDPct')
+    avg_sub_att = round(stat('RedAvgSubAtt', 'BlueAvgSubAtt'), 2)
+
     return {
-        'name':        name,
-        'record':      f"{wins}-{losses}-0",
-        'wins':        wins,
-        'losses':      losses,
-        'winRate':     round(wins / total * 100, 1) if total > 0 else 0,
-        'age':         int(stat('RedAge', 'BlueAge', 28)),
-        'heightCms':   round(stat('RedHeightCms', 'BlueHeightCms', 175), 1),
-        'reachCms':    round(stat('RedReachCms', 'BlueReachCms', 180), 1),
-        'stance':      stance,
-        'weightClass': weight_class,
-        'avgSigStr':   round(stat('RedAvgSigStrLanded', 'BlueAvgSigStrLanded'), 2),
-        'avgTD':       round(stat('RedAvgTDLanded', 'BlueAvgTDLanded'), 2),
+        'name':             name,
+        'record':           f"{wins}-{losses}-0",
+        'wins':             wins,
+        'losses':           losses,
+        'winRate':          round(wins / total * 100, 1) if total > 0 else 0,
+        'age':              int(stat('RedAge', 'BlueAge', 28)),
+        'heightCms':        round(stat('RedHeightCms', 'BlueHeightCms', 175), 1),
+        'reachCms':         round(stat('RedReachCms', 'BlueReachCms', 180), 1),
+        'stance':           stance,
+        'weightClass':      weight_class,
+        'avgSigStr':        round(stat('RedAvgSigStrLanded', 'BlueAvgSigStrLanded'), 2),
+        'avgTD':            round(stat('RedAvgTDLanded', 'BlueAvgTDLanded'), 2),
+        'winStreak':        win_streak,
+        'loseStreak':       lose_streak,
+        'longestWinStreak': longest_win_streak,
+        'koWins':           ko_wins,
+        'subWins':          sub_wins,
+        'decWins':          dec_wins,
+        'totalRounds':      total_rounds,
+        'titleBouts':       title_bouts,
+        'sigStrAcc':        sig_str_acc,
+        'tdAcc':            td_acc,
+        'avgSubAtt':        avg_sub_att,
     }
 
 
