@@ -2,6 +2,8 @@ import joblib
 import json
 import pandas as pd
 from pathlib import Path
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -18,6 +20,14 @@ red_names  = set(df['RedFighter'].dropna().unique())
 blue_names = set(df['BlueFighter'].dropna().unique())
 ALL_FIGHTERS = sorted(red_names | blue_names)
 FIGHTERS_SET = set(ALL_FIGHTERS)
+
+# Model accuracy berekenen op dezelfde test-split als tijdens training
+_available = [f for f in FEATURES if f in df.columns]
+_X = df[_available].fillna(0)
+_y = df['Winner']
+_, _X_test, _, _y_test = train_test_split(_X, _y, test_size=0.2, random_state=42)
+MODEL_ACCURACY = round(float(accuracy_score(_y_test, model.predict(_X_test))) * 100, 2)
+TOTAL_FIGHTS = len(df)
 
 # Mapping: Dif feature -> (red kolom, blue kolom)
 DIF_TO_COLS = {
