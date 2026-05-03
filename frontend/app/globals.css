@@ -3,12 +3,13 @@
 :root {
   --bg: #e8e8e4;
   --surface: #ffffff;
+  --section: #f4f4f1;
   --line: #d0d0c8;
-  --line-strong: #b8b8b0;
-  --card-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px var(--line);
+  --line-strong: #a8a8a0;
+  --card-shadow: 0 1px 4px rgba(0,0,0,0.09), 0 0 0 1px var(--line);
   --ink: #141414;
-  --ink-dim: #6b6b64;
-  --ink-mute: #9a9a92;
+  --ink-dim: #4a4a44;
+  --ink-mute: #767670;
   --accent: #e8003d;
   --accent-soft: #ffe8ee;
   --blue: #2563eb;

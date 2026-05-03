@@ -45,7 +45,7 @@ export default function ResultCard({ result, modelInfo, onReset }: Props) {
           <span style={{ fontSize: 13, color: 'var(--ink-dim)', fontWeight: 500 }}>Confidence</span>
           <span style={{ fontSize: 26, fontWeight: 800, color: winnerColor }}>{confidence.toFixed(1)}%</span>
         </div>
-        <div style={{ height: 10, background: 'var(--bg)', borderRadius: 6, overflow: 'hidden' }}>
+        <div style={{ height: 10, background: 'var(--section)', border: '1px solid var(--line)', borderRadius: 6, overflow: 'hidden' }}>
           <div style={{
             height: '100%', width: `${bar}%`, background: winnerColor,
             borderRadius: 6, transition: 'width 900ms cubic-bezier(.2,.8,.2,1)',
@@ -56,7 +56,7 @@ export default function ResultCard({ result, modelInfo, onReset }: Props) {
       {/* Method + Round */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 18 }}>
         {[['Method', method], ['Est. Round', round]].map(([k, v]) => (
-          <div key={k} style={{ padding: '12px 14px', background: 'var(--bg)', borderRadius: 8 }}>
+          <div key={k} style={{ padding: '12px 14px', background: 'var(--section)', border: '1px solid var(--line)', borderRadius: 8 }}>
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--ink-dim)', marginBottom: 4 }}>{k.toUpperCase()}</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>{v}</div>
           </div>
@@ -72,7 +72,7 @@ export default function ResultCard({ result, modelInfo, onReset }: Props) {
           {factors.map((f, i) => (
             <div key={f.label} style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '12px 14px', background: 'var(--bg)', borderRadius: 8,
+              padding: '12px 14px', background: 'var(--section)', border: '1px solid var(--line)', borderRadius: 8,
             }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{

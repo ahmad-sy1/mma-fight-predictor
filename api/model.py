@@ -4,16 +4,17 @@ import pandas as pd
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from api.scraper import get_fighter_stats_live
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-model = joblib.load(BASE_DIR / 'models' / 'model.pkl')
+model = joblib.load(BASE_DIR / 'models' / 'model_v2.pkl')
 
-with open(BASE_DIR / 'models' / 'feature_names.json') as f:
+with open(BASE_DIR / 'models' / 'feature_names_v2.json') as f:
     FEATURES = json.load(f)
 
 # Één dataset met alles: namen + statistieken
-df = pd.read_csv(BASE_DIR / 'data' / 'ufc_clean.csv')
+df = pd.read_csv(BASE_DIR / 'data' / 'ufc_clean_v2.csv')
 
 # Alle unieke vechtersnamen
 red_names  = set(df['RedFighter'].dropna().unique())
@@ -21,10 +22,11 @@ blue_names = set(df['BlueFighter'].dropna().unique())
 ALL_FIGHTERS = sorted(red_names | blue_names)
 FIGHTERS_SET = set(ALL_FIGHTERS)
 
-# Model accuracy berekenen op dezelfde test-split als tijdens training
+# Model accuracy berekenen op dezelfde test-split als tijdens training (dropna, zoals bij training)
 _available = [f for f in FEATURES if f in df.columns]
-_X = df[_available].fillna(0)
-_y = df['Winner']
+_df_model = df[_available + ['Winner']].dropna()
+_X = _df_model[_available]
+_y = _df_model['Winner']
 _, _X_test, _, _y_test = train_test_split(_X, _y, test_size=0.2, random_state=42)
 MODEL_ACCURACY = round(float(accuracy_score(_y_test, model.predict(_X_test))) * 100, 2)
 TOTAL_FIGHTS = len(df)
@@ -105,7 +107,14 @@ def build_input(red_name: str, blue_name: str) -> pd.DataFrame:
 
 
 def get_fighter_info(name: str) -> dict:
-    """Haal display-informatie op voor een vechter."""
+    """
+    Haal fighter stats op — eerst live van ufcstats.com, anders uit de dataset.
+    """
+    live = get_fighter_stats_live(name)
+    if live:
+        return live
+
+    # Fallback: bereken uit de dataset
     def stat(rc, bc, default=0.0):
         return _mean_stat(name, rc, bc, default)
 
@@ -132,7 +141,6 @@ def get_fighter_info(name: str) -> dict:
         wcs += df.loc[df['BlueFighter'] == name, 'WeightClass'].dropna().tolist()
     weight_class = max(set(wcs), key=wcs.count) if wcs else '—'
 
-    # Cumulative stats — use max (most recent value)
     win_streak         = int(max_stat('RedCurrentWinStreak', 'BlueCurrentWinStreak'))
     lose_streak        = int(max_stat('RedCurrentLoseStreak', 'BlueCurrentLoseStreak'))
     longest_win_streak = int(max_stat('RedLongestWinStreak', 'BlueLongestWinStreak'))
@@ -142,14 +150,9 @@ def get_fighter_info(name: str) -> dict:
     title_bouts        = int(max_stat('RedTotalTitleBouts', 'BlueTotalTitleBouts'))
     dec_wins           = max(0, wins - ko_wins - sub_wins)
 
-    # Rate stats — use mean; multiply by 100 if stored as fraction (< 1.5)
     def pct(rc, bc):
         v = stat(rc, bc)
         return round(min(v * 100 if v < 1.5 else v, 100), 1)
-
-    sig_str_acc = pct('RedAvgSigStrPct', 'BlueAvgSigStrPct')
-    td_acc      = pct('RedAvgTDPct', 'BlueAvgTDPct')
-    avg_sub_att = round(stat('RedAvgSubAtt', 'BlueAvgSubAtt'), 2)
 
     return {
         'name':             name,
@@ -172,9 +175,9 @@ def get_fighter_info(name: str) -> dict:
         'decWins':          dec_wins,
         'totalRounds':      total_rounds,
         'titleBouts':       title_bouts,
-        'sigStrAcc':        sig_str_acc,
-        'tdAcc':            td_acc,
-        'avgSubAtt':        avg_sub_att,
+        'sigStrAcc':        pct('RedAvgSigStrPct', 'BlueAvgSigStrPct'),
+        'tdAcc':            pct('RedAvgTDPct', 'BlueAvgTDPct'),
+        'avgSubAtt':        round(stat('RedAvgSubAtt', 'BlueAvgSubAtt'), 2),
     }
 
 

@@ -131,7 +131,7 @@ function PredictPage({ modelInfo }: { modelInfo: ModelInfo | null }) {
       {/* Quick picks */}
       {!result && !predicting && (
         <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--ink-mute)', alignSelf: 'center' }}>Try:</span>
+          <span style={{ fontSize: 12, color: 'var(--ink-dim)', alignSelf: 'center' }}>Try:</span>
           {[
             ['Jon Jones', 'Stipe Miocic'],
             ['Conor McGregor', 'Dustin Poirier'],
@@ -225,7 +225,7 @@ function UpcomingPage() {
             <div key={i} style={{
               background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12,
               padding: 20, minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--ink-mute)', fontSize: 13,
+              color: 'var(--ink-dim)', fontSize: 13,
             }}>
               Loading…
             </div>

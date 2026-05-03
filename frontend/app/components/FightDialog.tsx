@@ -115,7 +115,8 @@ export default function FightDialog({ prediction, onClose }: Props) {
 
           {/* Oracle pick */}
           <div style={{
-            marginTop: 18, padding: '12px 16px', background: 'var(--bg)', borderRadius: 10,
+            marginTop: 18, padding: '12px 16px', background: 'var(--section)',
+            border: '1px solid var(--line)', borderRadius: 10,
             display: 'flex', alignItems: 'center', gap: 12,
           }}>
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: winnerColor }}>ORACLE PICK</div>
@@ -152,7 +153,8 @@ export default function FightDialog({ prediction, onClose }: Props) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {factors.map((f, i) => (
                   <div key={f.label} style={{
-                    padding: '12px 14px', background: 'var(--bg)', borderRadius: 8,
+                    padding: '12px 14px', background: 'var(--section)',
+                    border: '1px solid var(--line)', borderRadius: 8,
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

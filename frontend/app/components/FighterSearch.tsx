@@ -150,13 +150,13 @@ export default function FighterSearch({ corner, fighter, query, setQuery, onComm
         ].map(([k, v]) => (
           <div key={k} style={{ background: 'var(--surface)', padding: '8px 6px', textAlign: 'center' }}>
             <div style={{ fontSize: 14, fontWeight: 800, color: fighter ? 'var(--ink)' : 'var(--ink-mute)' }}>{v}</div>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', color: 'var(--ink-mute)', marginTop: 2 }}>{k}</div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', color: 'var(--ink-dim)', marginTop: 2 }}>{k}</div>
           </div>
         ))}
       </div>
 
       {!fighter && (
-        <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--ink-mute)', fontSize: 13 }}>
+        <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--ink-dim)', fontSize: 13 }}>
           Start typing a fighter name to load stats
         </div>
       )}
@@ -166,7 +166,8 @@ export default function FighterSearch({ corner, fighter, query, setQuery, onComm
           {/* Streak banner */}
           <div style={{
             display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8,
-            background: 'var(--bg)', padding: '10px 12px', borderRadius: 6,
+            background: 'var(--section)', border: '1px solid var(--line)',
+            padding: '10px 12px', borderRadius: 6,
           }}>
             {[
               [fighter.winStreak, 'WIN STREAK'],
@@ -207,7 +208,7 @@ export default function FighterSearch({ corner, fighter, query, setQuery, onComm
               { label: 'KO WINS',       value: String(fighter.koWins) },
               { label: 'DEC WINS',      value: String(fighter.decWins) },
             ].map(({ label: lbl, value }) => (
-              <div key={lbl} style={{ padding: '10px 12px', background: 'var(--bg)', borderRadius: 6 }}>
+              <div key={lbl} style={{ padding: '10px 12px', background: 'var(--section)', border: '1px solid var(--line)', borderRadius: 6 }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', lineHeight: 1.1 }}>{value}</div>
                 <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--ink-dim)', marginTop: 3 }}>{lbl}</div>
               </div>
