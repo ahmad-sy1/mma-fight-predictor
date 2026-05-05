@@ -118,7 +118,7 @@ def get_fight_details(fight_url, event_name):
     elif blue_status == "W":
         winner = "Blue"
     else:
-        return None  # draw / NC overslaan
+        return None
 
     def fighter_name(el):
         a = el.select_one("h3.b-fight-details__person-name a")
@@ -129,36 +129,48 @@ def get_fight_details(fight_url, event_name):
     if not red_name or not blue_name:
         return None
 
-    # Fight info (methode, ronde, tijd, gewichtsklasse)
+    # ── Method: zit in <i style="font-style: normal"> binnen het eerste text-item
+    method = ""
+    method_item = soup.select_one("i.b-fight-details__text-item_first")
+    if method_item:
+        method_inner = method_item.select_one("i[style]")
+        if method_inner:
+            method = method_inner.get_text(strip=True)
+
+    # ── Round / Time / Time format: tekst direct na het label
     info = {}
-    for p in soup.select("div.b-fight-details__content p.b-fight-details__text"):
-        text = p.get_text(" ", strip=True)
-        for key in ["Method", "Round", "Time", "Time format", "Weight class"]:
-            if text.startswith(key):
-                info[key] = text.replace(key + ":", "").strip()
+    for i_tag in soup.select("div.b-fight-details__content i.b-fight-details__label"):
+        key = i_tag.get_text(strip=True).strip().rstrip(":")
+        val = ""
+        for sibling in i_tag.next_siblings:
+            text = str(sibling).strip()
+            if text and not text.startswith("<"):
+                val = text
+                break
+        if key and val:
+            info[key] = val
 
-    method           = info.get("Method", "")
-    finish_detail    = ""
-    # finish detail staat soms als tweede regel bij Method
-    detail_el = soup.select_one("p.b-fight-details__text i[style]")
-    if detail_el:
-        finish_detail = detail_el.get_text(strip=True)
+    round_num   = int(info.get("Round", 0) or 0)
+    fight_time  = info.get("Time", "")
+    time_format = info.get("Time format", "")
 
-    round_num        = int(info.get("Round", 0) or 0)
-    fight_time       = info.get("Time", "")
-    time_format      = info.get("Time format", "")
-    weight_class     = info.get("Weight class", "")
-    title_bout       = "Title" in time_format
+    # ── Weight class + title bout: uit het fight-title element
+    fight_title_el = soup.select_one("i.b-fight-details__fight-title")
+    fight_title_text = ""
+    if fight_title_el:
+        for img in fight_title_el.find_all("img"):
+            img.decompose()
+        fight_title_text = fight_title_el.get_text(strip=True)
+
+    title_bout   = "Championship" in fight_title_text
+    weight_class = fight_title_text.replace("UFC", "").replace("Championship Bout", "").replace("Bout", "").strip()
 
     scheduled = 3
     m = re.search(r"(\d+)\s+Rnd", time_format)
     if m:
         scheduled = int(m.group(1))
 
-    # Stats tabellen — ufcstats heeft twee tabellen:
-    # Tabel 1: totaal (eerste rij = totaal over alle rondes)
-    # Tabel 2: per ronde
-    # We pakken tabel 1, eerste data-rij
+    # ── Stats tabellen ────────────────────────────────────────────────────────
     tables = soup.select("table.b-fight-details__table")
 
     red_s  = empty_stats("red")
@@ -169,28 +181,26 @@ def get_fight_details(fight_url, event_name):
         if rows:
             cols = rows[0].select("td")
             if len(cols) >= 10:
-                # Kolom volgorde: Fighter | KD | Sig.Str. | Sig.Str.% | Total Str. | TD | TD% | Sub.Att | Rev | Ctrl
-                # Elke kolom heeft twee waarden: red bovenaan, blue onderaan (als <p> tags)
                 def col_vals(col):
                     ps = col.select("p")
                     return (ps[0].get_text(strip=True) if len(ps) > 0 else "0",
                             ps[1].get_text(strip=True) if len(ps) > 1 else "0")
 
-                r_kd, b_kd       = col_vals(cols[1])
-                r_sig, b_sig     = col_vals(cols[2])
-                r_sigp, b_sigp   = col_vals(cols[3])
-                r_tot, b_tot     = col_vals(cols[4])
-                r_td, b_td       = col_vals(cols[5])
-                r_tdp, b_tdp     = col_vals(cols[6])
-                r_sub, b_sub     = col_vals(cols[7])
-                r_ctrl, b_ctrl   = col_vals(cols[9])
+                r_kd,  b_kd  = col_vals(cols[1])
+                r_sig, b_sig = col_vals(cols[2])
+                r_sigp,b_sigp= col_vals(cols[3])
+                r_tot, b_tot = col_vals(cols[4])
+                r_td,  b_td  = col_vals(cols[5])
+                r_tdp, b_tdp = col_vals(cols[6])
+                r_sub, b_sub = col_vals(cols[7])
+                r_ctrl,b_ctrl= col_vals(cols[9])
 
                 r_sl, r_sa = parse_of(r_sig)
                 b_sl, b_sa = parse_of(b_sig)
                 r_tl, r_ta = parse_of(r_td)
                 b_tl, b_ta = parse_of(b_td)
-                r_ttl, r_tta = parse_of(r_tot)
-                b_ttl, b_tta = parse_of(b_tot)
+                r_ttl,r_tta= parse_of(r_tot)
+                b_ttl,b_tta= parse_of(b_tot)
 
                 red_s.update({
                     "red_kd": int(r_kd or 0),
@@ -209,7 +219,6 @@ def get_fight_details(fight_url, event_name):
                     "blue_ctrl_sec": parse_ctrl(b_ctrl),
                 })
 
-        # Tabel 2: head/body/leg/distance/clinch/ground
         if len(tables) > 1:
             rows2 = tables[1].select("tbody tr")
             if rows2:
@@ -220,69 +229,52 @@ def get_fight_details(fight_url, event_name):
                         return (ps[0].get_text(strip=True) if len(ps) > 0 else "0 of 0",
                                 ps[1].get_text(strip=True) if len(ps) > 1 else "0 of 0")
 
-                    r_head, b_head = col_vals2(cols2[3])
-                    r_body, b_body = col_vals2(cols2[4])
-                    r_leg,  b_leg  = col_vals2(cols2[5])
-                    r_dist, b_dist = col_vals2(cols2[1])
-                    r_clinch, b_clinch = col_vals2(cols2[2])
-                    r_ground, b_ground = col_vals2(cols2[6]) if len(cols2) > 6 else ("0 of 0", "0 of 0")
-
-                    rhl, rha = parse_of(r_head)
-                    bhl, bha = parse_of(b_head)
-                    rbl, rba = parse_of(r_body)
-                    bbl, bba = parse_of(b_body)
-                    rll, rla = parse_of(r_leg)
-                    bll, bla = parse_of(b_leg)
-                    rdl, rda = parse_of(r_dist)
-                    bdl, bda = parse_of(b_dist)
-                    rcl, rca = parse_of(r_clinch)
-                    bcl, bca = parse_of(b_clinch)
-                    rgl, rga = parse_of(r_ground)
-                    bgl, bga = parse_of(b_ground)
+                    r_head,  b_head  = col_vals2(cols2[3])
+                    r_body,  b_body  = col_vals2(cols2[4])
+                    r_leg,   b_leg   = col_vals2(cols2[5])
+                    r_dist,  b_dist  = col_vals2(cols2[1])
+                    r_clinch,b_clinch= col_vals2(cols2[2])
+                    r_ground,b_ground= col_vals2(cols2[6]) if len(cols2) > 6 else ("0 of 0","0 of 0")
 
                     red_s.update({
-                        "red_head_land": rhl, "red_head_att": rha,
-                        "red_body_land": rbl, "red_body_att": rba,
-                        "red_leg_land": rll, "red_leg_att": rla,
-                        "red_distance_land": rdl, "red_distance_att": rda,
-                        "red_clinch_land": rcl, "red_clinch_att": rca,
-                        "red_ground_land": rgl, "red_ground_att": rga,
+                        "red_head_land":     parse_of(r_head)[0],  "red_head_att":     parse_of(r_head)[1],
+                        "red_body_land":     parse_of(r_body)[0],  "red_body_att":     parse_of(r_body)[1],
+                        "red_leg_land":      parse_of(r_leg)[0],   "red_leg_att":      parse_of(r_leg)[1],
+                        "red_distance_land": parse_of(r_dist)[0],  "red_distance_att": parse_of(r_dist)[1],
+                        "red_clinch_land":   parse_of(r_clinch)[0],"red_clinch_att":   parse_of(r_clinch)[1],
+                        "red_ground_land":   parse_of(r_ground)[0],"red_ground_att":   parse_of(r_ground)[1],
                     })
                     blue_s.update({
-                        "blue_head_land": bhl, "blue_head_att": bha,
-                        "blue_body_land": bbl, "blue_body_att": bba,
-                        "blue_leg_land": bll, "blue_leg_att": bla,
-                        "blue_distance_land": bdl, "blue_distance_att": bda,
-                        "blue_clinch_land": bcl, "blue_clinch_att": bca,
-                        "blue_ground_land": bgl, "blue_ground_att": bga,
+                        "blue_head_land":     parse_of(b_head)[0],  "blue_head_att":     parse_of(b_head)[1],
+                        "blue_body_land":     parse_of(b_body)[0],  "blue_body_att":     parse_of(b_body)[1],
+                        "blue_leg_land":      parse_of(b_leg)[0],   "blue_leg_att":      parse_of(b_leg)[1],
+                        "blue_distance_land": parse_of(b_dist)[0],  "blue_distance_att": parse_of(b_dist)[1],
+                        "blue_clinch_land":   parse_of(b_clinch)[0],"blue_clinch_att":   parse_of(b_clinch)[1],
+                        "blue_ground_land":   parse_of(b_ground)[0],"blue_ground_att":   parse_of(b_ground)[1],
                     })
 
     return {
-        "event": event_name,
-        "red_fighter": red_name,
-        "blue_fighter": blue_name,
-        "winner": winner,
-        "method": method,
-        "finish_detail": finish_detail,
-        "round": round_num,
-        "fight_time": fight_time,
+        "event":            event_name,
+        "red_fighter":      red_name,
+        "blue_fighter":     blue_name,
+        "winner":           winner,
+        "method":           method,
+        "round":            round_num,
+        "fight_time":       fight_time,
         "scheduled_rounds": scheduled,
-        "weight_class": weight_class,
-        "title_bout": title_bout,
+        "weight_class":     weight_class,
+        "title_bout":       title_bout,
         **red_s,
         **blue_s,
     }
 
-
 # ── Opslaan in Supabase ───────────────────────────────────────────────────────
 
 def save_fight(fight):
-    print(f"    DEBUG keys: {list(fight.keys())}")
     try:
-        result = supabase.table("fights").insert(fight).execute()
-        print(f"    DEBUG result: {result}")
+        supabase.table("fights").upsert(fight, on_conflict="red_fighter,blue_fighter,event").execute()
     except Exception as e:
-        print(f"    DEBUG error: {e}")
+        print(f"  ⚠️  Save failed: {e}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────

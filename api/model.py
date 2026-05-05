@@ -10,9 +10,9 @@ from api.fighter_info import get_fighter_info
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ── Model laden ───────────────────────────────────────────────────────────────
-model = joblib.load(BASE_DIR / 'models' / 'model_v3.pkl')
+model = joblib.load(BASE_DIR / 'models' / 'model_v4.pkl')
 
-with open(BASE_DIR / 'models' / 'feature_names_v3.json') as f:
+with open(BASE_DIR / 'models' / 'feature_names_v4.json') as f:
     FEATURES = json.load(f)
 
 # ── Dataset + fighters lijst ──────────────────────────────────────────────────
