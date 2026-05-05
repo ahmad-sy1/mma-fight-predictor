@@ -145,8 +145,8 @@ export default function FighterSearch({ corner, fighter, query, setQuery, onComm
         {[
           ['REC',   fighter?.record ?? '—'],
           ['AGE',   fighter?.age ?? '—'],
-          ['HT',    fighter ? heightFmt(fighter.heightCms) : '—'],
-          ['REACH', fighter ? `${(fighter.reachCms / 2.54).toFixed(0)}"` : '—'],
+          ['HT',    fighter?.heightCms ? heightFmt(fighter.heightCms) : '—'],
+          ['REACH', fighter?.reachCms  ? `${(fighter.reachCms / 2.54).toFixed(0)}"` : '—'],
         ].map(([k, v]) => (
           <div key={k} style={{ background: 'var(--surface)', padding: '8px 6px', textAlign: 'center' }}>
             <div style={{ fontSize: 14, fontWeight: 800, color: fighter ? 'var(--ink)' : 'var(--ink-mute)' }}>{v}</div>
@@ -218,11 +218,11 @@ export default function FighterSearch({ corner, fighter, query, setQuery, onComm
           {/* Detail rows */}
           <div>
             {[
-              ['Total rounds',      fighter.totalRounds],
+              ['Total rounds', fighter.totalRounds ?? '—'],
               ['Title bouts',       fighter.titleBouts],
               ['Longest win streak',fighter.longestWinStreak],
               ['Weight class',      fighter.weightClass],
-              ['Stance',            fighter.stance],
+              ['Stance',       fighter.stance ?? '—'],
             ].map(([k, v]) => (
               <div key={String(k)} style={{
                 display: 'flex', justifyContent: 'space-between',

@@ -4,25 +4,28 @@ export interface Fighter {
   wins: number
   losses: number
   winRate: number
-  age: number
-  heightCms: number
-  reachCms: number
-  stance: string
   weightClass: string
-  avgSigStr: number
-  avgTD: number
-  // Extended stats
   winStreak: number
   loseStreak: number
   longestWinStreak: number
   koWins: number
   subWins: number
   decWins: number
-  totalRounds: number
   titleBouts: number
   sigStrAcc: number
   tdAcc: number
+  avgSigStr: number
+  avgTD: number
   avgSubAtt: number
+  avgCtrlSec: number
+  avgKD: number
+  recentWins: number
+  // Optioneel — niet in onze database
+  age?: number
+  heightCms?: number
+  reachCms?: number
+  stance?: string
+  totalRounds?: number
   corner?: 'red' | 'blue'
 }
 
@@ -34,7 +37,6 @@ export interface ModelInfo {
 
 export interface PredictionFactor {
   label: string
-  sub: string
   delta: number
 }
 
