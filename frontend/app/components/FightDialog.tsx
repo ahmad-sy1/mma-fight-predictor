@@ -27,13 +27,13 @@ export default function FightDialog({ prediction, onClose }: Props) {
 
   const rows: [string, string | number, string | number][] = [
     ['Win streak',    redFighter.winStreak,    blueFighter.winStreak],
-    ['Reach (cm)',    redFighter.reachCms,     blueFighter.reachCms],
+    ['Reach (cm)',    redFighter.reachCms  ?? '—', blueFighter.reachCms  ?? '—'],
     ['Sig str / min', redFighter.avgSigStr,    blueFighter.avgSigStr],
     ['Str accuracy',  `${redFighter.sigStrAcc}%`, `${blueFighter.sigStrAcc}%`],
     ['TD avg',        redFighter.avgTD,         blueFighter.avgTD],
     ['KO wins',       redFighter.koWins,        blueFighter.koWins],
     ['Sub wins',      redFighter.subWins,       blueFighter.subWins],
-    ['Age',           redFighter.age,            blueFighter.age],
+    ['Age',           redFighter.age ?? '—',    blueFighter.age ?? '—'],
   ]
 
   return (
@@ -60,10 +60,10 @@ export default function FightDialog({ prediction, onClose }: Props) {
         }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--accent)' }}>
-              {fight.event.toUpperCase()} · {fight.card.toUpperCase()}
+              {fight.event.toUpperCase()} · {fight.weightClass.toUpperCase()}
             </div>
             <div style={{ fontSize: 13, color: 'var(--ink-dim)', marginTop: 4 }}>
-              {fight.date} · {fight.venue}
+              {fight.date} · {fight.location}
             </div>
           </div>
           <button
@@ -167,7 +167,6 @@ export default function FightDialog({ prediction, onClose }: Props) {
                       }}>{i + 1}</span>
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 600 }}>{f.label}</div>
-                        <div style={{ fontSize: 11, color: 'var(--ink-mute)' }}>{f.sub}</div>
                       </div>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: winnerColor }}>+{f.delta.toFixed(1)}</div>

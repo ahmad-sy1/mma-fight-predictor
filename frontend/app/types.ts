@@ -52,8 +52,8 @@ export interface PredictionResult {
 export interface UpcomingFight {
   event: string
   date: string
-  venue: string
-  card: string
+  location: string
+  weightClass: string
   redFighter: string
   blueFighter: string
 }

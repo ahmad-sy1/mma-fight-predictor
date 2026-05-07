@@ -40,11 +40,11 @@ export default function UpcomingCard({ prediction, onClick }: Props) {
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--accent)' }}>
             {fight.event.toUpperCase()}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--ink-dim)', marginTop: 2 }}>{fight.card}</div>
+          <div style={{ fontSize: 12, color: 'var(--ink-dim)', marginTop: 2 }}>{fight.weightClass}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 13, fontWeight: 700 }}>{fight.date}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-mute)' }}>{fight.venue}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-mute)' }}>{fight.location}</div>
         </div>
       </div>
 

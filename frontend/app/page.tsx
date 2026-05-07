@@ -8,16 +8,10 @@ import ResultCard from './components/ResultCard'
 import DiffTable from './components/DiffTable'
 import UpcomingCard from './components/UpcomingCard'
 import FightDialog from './components/FightDialog'
-import { Fighter, ModelInfo, PredictionResult, UpcomingFight, UpcomingPrediction } from './types'
+import { Fighter, ModelInfo, PredictionFactor, PredictionResult, UpcomingFight, UpcomingPrediction } from './types'
 
 const API_URL = 'http://localhost:8000'
 
-const UPCOMING_FIGHTS: UpcomingFight[] = [
-  { event: 'UFC 318',        date: 'May 3, 2026',  venue: 'T-Mobile Arena, Las Vegas', card: 'Heavyweight Title',      redFighter: 'Jon Jones',      blueFighter: 'Stipe Miocic' },
-  { event: 'UFC 318',        date: 'May 3, 2026',  venue: 'T-Mobile Arena, Las Vegas', card: 'Lightweight',            redFighter: 'Conor McGregor', blueFighter: 'Dustin Poirier' },
-  { event: 'UFC Fight Night', date: 'May 17, 2026', venue: 'UFC Apex, Las Vegas',       card: 'Middleweight',           redFighter: 'Israel Adesanya',blueFighter: 'Robert Whittaker' },
-  { event: 'UFC 319',        date: 'Jun 7, 2026',  venue: 'Kaseya Center, Miami',      card: 'Featherweight Title',    redFighter: 'Max Holloway',   blueFighter: 'Conor McGregor' },
-]
 
 /* ---------- Predict page ---------- */
 function PredictPage({ modelInfo }: { modelInfo: ModelInfo | null }) {
@@ -176,33 +170,44 @@ function PredictPage({ modelInfo }: { modelInfo: ModelInfo | null }) {
 
 /* ---------- Upcoming page ---------- */
 function UpcomingPage() {
-  const [predictions, setPredictions] = useState<(UpcomingPrediction | null)[]>(UPCOMING_FIGHTS.map(() => null))
-  const [open, setOpen] = useState<UpcomingPrediction | null>(null)
+  const [fights, setFights]           = useState<UpcomingFight[]>([])
+  const [predictions, setPredictions] = useState<(UpcomingPrediction | null)[]>([])
+  const [loading, setLoading]         = useState(true)
+  const [open, setOpen]               = useState<UpcomingPrediction | null>(null)
 
   useEffect(() => {
-    UPCOMING_FIGHTS.forEach(async (fight, i) => {
-      try {
-        const res = await fetch(`${API_URL}/predict`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ red_fighter: fight.redFighter, blue_fighter: fight.blueFighter }),
-        })
-        if (!res.ok) return
-        const data = await res.json()
-        setPredictions(prev => {
-          const next = [...prev]
-          next[i] = {
-            fight,
-            redFighter:  { ...data.red_fighter,  corner: 'red'  as const },
-            blueFighter: { ...data.blue_fighter, corner: 'blue' as const },
-            winnerCorner: data.winner_corner as 'red' | 'blue',
-            confidence:   data.confidence,
-            factors:      data.factors,
+    fetch(`${API_URL}/upcoming`)
+      .then(r => r.json())
+      .then(data => {
+        const raw = data.fights as Array<{
+          event: string; date: string; location: string; weightClass: string
+          redFighter: string; blueFighter: string
+          inDataset: boolean; prediction: Record<string, unknown> | null
+        }>
+
+        const mappedFights: UpcomingFight[] = raw.map(f => ({
+          event: f.event, date: f.date, location: f.location,
+          weightClass: f.weightClass, redFighter: f.redFighter, blueFighter: f.blueFighter,
+        }))
+
+        const mappedPreds: (UpcomingPrediction | null)[] = raw.map((f, i) => {
+          if (!f.inDataset || !f.prediction) return null
+          const p = f.prediction as Record<string, unknown>
+          return {
+            fight:        mappedFights[i],
+            redFighter:   { ...(p.red_fighter  as Fighter), corner: 'red'  as const },
+            blueFighter:  { ...(p.blue_fighter as Fighter), corner: 'blue' as const },
+            winnerCorner: p.winner_corner as 'red' | 'blue',
+            confidence:   p.confidence as number,
+            factors:      p.factors as PredictionFactor[],
           }
-          return next
         })
-      } catch { /* fighter not in dataset — skip */ }
-    })
+
+        setFights(mappedFights)
+        setPredictions(mappedPreds)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
   return (
@@ -217,21 +222,44 @@ function UpcomingPage() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        {predictions.map((p, i) =>
-          p ? (
-            <UpcomingCard key={i} prediction={p} onClick={() => setOpen(p)} />
-          ) : (
-            <div key={i} style={{
-              background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12,
-              padding: 20, minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--ink-dim)', fontSize: 13,
-            }}>
-              Loading…
-            </div>
-          )
-        )}
-      </div>
+      {loading ? (
+        <div style={{ color: 'var(--ink-dim)', fontSize: 14, textAlign: 'center', padding: '60px 0' }}>
+          Loading upcoming fights…
+        </div>
+      ) : fights.length === 0 ? (
+        <div style={{ color: 'var(--ink-dim)', fontSize: 14, textAlign: 'center', padding: '60px 0' }}>
+          No upcoming fights found.
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          {fights.map((fight, i) => {
+            const pred = predictions[i]
+            return pred ? (
+              <UpcomingCard key={i} prediction={pred} onClick={() => setOpen(pred)} />
+            ) : (
+              <div key={i} style={{
+                background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12,
+                padding: 20, minHeight: 140,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--accent)', marginBottom: 4 }}>
+                  {fight.event.toUpperCase()}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--ink-dim)', marginBottom: 14 }}>
+                  {fight.date} · {fight.location}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700 }}>
+                  <span>{fight.redFighter}</span>
+                  <span style={{ color: 'var(--ink-mute)', fontWeight: 400, fontSize: 12 }}>vs</span>
+                  <span>{fight.blueFighter}</span>
+                </div>
+                <div style={{ marginTop: 10, fontSize: 12, color: 'var(--ink-mute)' }}>
+                  {fight.weightClass} · Not in dataset — no prediction available
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {open && <FightDialog prediction={open} onClose={() => setOpen(null)} />}
     </main>
