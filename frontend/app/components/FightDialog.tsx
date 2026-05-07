@@ -1,7 +1,43 @@
 'use client'
 
 import { useEffect } from 'react'
-import { UpcomingPrediction } from '../types'
+import { Fighter, PredictionFactor, UpcomingPrediction } from '../types'
+import { initials } from '../lib/utils'
+
+function FighterColumn({ fighter, isWinner, isRed, pct }: { fighter: Fighter; isWinner: boolean; isRed: boolean; pct: number }) {
+  return (
+    <div className="text-center">
+      <div className={`w-[68px] h-[68px] rounded-full mx-auto flex items-center justify-center text-xl font-extrabold border-[3px] ${
+        isRed
+          ? `bg-accent-soft text-accent ${isWinner ? 'border-accent' : 'border-line'}`
+          : `bg-blue-soft text-blue ${isWinner ? 'border-blue' : 'border-line'}`
+      }`}>
+        {initials(fighter.name)}
+      </div>
+      <div className="text-base font-extrabold mt-2.5">{fighter.name}</div>
+      <div className="text-xs text-ink-mute">{fighter.record} · {fighter.weightClass}</div>
+      <div className={`text-[26px] font-extrabold mt-1.5 ${isRed ? 'text-accent' : 'text-blue'}`}>{pct}%</div>
+    </div>
+  )
+}
+
+function FactorRow({ factor, rank, winnerIsRed }: { factor: PredictionFactor; rank: number; winnerIsRed: boolean }) {
+  return (
+    <div className="px-3.5 py-3 bg-section border border-line rounded-lg flex justify-between items-center">
+      <div className="flex items-center gap-3">
+        <span className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-[11px] font-bold ${
+          rank === 0
+            ? winnerIsRed ? 'bg-accent text-white' : 'bg-blue text-white'
+            : 'bg-line-strong text-ink-dim'
+        }`}>{rank + 1}</span>
+        <div className="text-[13px] font-semibold">{factor.label}</div>
+      </div>
+      <div className={`text-[13px] font-bold ${winnerIsRed ? 'text-accent' : 'text-blue'}`}>
+        +{factor.delta.toFixed(1)}
+      </div>
+    </div>
+  )
+}
 
 interface Props {
   prediction: UpcomingPrediction
@@ -12,11 +48,19 @@ export default function FightDialog({ prediction, onClose }: Props) {
   const { fight, redFighter, blueFighter, winnerCorner, confidence, factors } = prediction
   const aPct = winnerCorner === 'red' ? confidence : Math.round(100 - confidence)
   const bPct = 100 - aPct
-  const winnerColor = winnerCorner === 'red' ? 'var(--accent)' : 'var(--blue)'
-  const winnerName  = winnerCorner === 'red' ? redFighter.name : blueFighter.name
+  const winnerIsRed = winnerCorner === 'red'
+  const winnerName  = winnerIsRed ? redFighter.name : blueFighter.name
 
-  const initials = (name: string) =>
-    name.split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase()
+  const compRows: [string, string | number, string | number][] = [
+    ['Win streak',    redFighter.winStreak,        blueFighter.winStreak],
+    ['Reach (cm)',    redFighter.reachCms ?? '—',  blueFighter.reachCms ?? '—'],
+    ['Sig str / min', redFighter.avgSigStr,         blueFighter.avgSigStr],
+    ['Str accuracy',  `${redFighter.sigStrAcc}%`,  `${blueFighter.sigStrAcc}%`],
+    ['TD avg',        redFighter.avgTD,             blueFighter.avgTD],
+    ['KO wins',       redFighter.koWins,            blueFighter.koWins],
+    ['Sub wins',      redFighter.subWins,           blueFighter.subWins],
+    ['Age',           redFighter.age ?? '—',        blueFighter.age ?? '—'],
+  ]
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -25,119 +69,60 @@ export default function FightDialog({ prediction, onClose }: Props) {
     return () => { window.removeEventListener('keydown', h); document.body.style.overflow = '' }
   }, [onClose])
 
-  const rows: [string, string | number, string | number][] = [
-    ['Win streak',    redFighter.winStreak,    blueFighter.winStreak],
-    ['Reach (cm)',    redFighter.reachCms,     blueFighter.reachCms],
-    ['Sig str / min', redFighter.avgSigStr,    blueFighter.avgSigStr],
-    ['Str accuracy',  `${redFighter.sigStrAcc}%`, `${blueFighter.sigStrAcc}%`],
-    ['TD avg',        redFighter.avgTD,         blueFighter.avgTD],
-    ['KO wins',       redFighter.koWins,        blueFighter.koWins],
-    ['Sub wins',      redFighter.subWins,       blueFighter.subWins],
-    ['Age',           redFighter.age,            blueFighter.age],
-  ]
-
   return (
     <div
       onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(20,20,20,0.5)', backdropFilter: 'blur(4px)',
-        zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-        padding: '40px 20px', overflowY: 'auto',
-      }}
+      className="fixed inset-0 bg-[rgba(20,20,20,0.5)] backdrop-blur-sm z-[100] flex items-start justify-center py-10 px-5 overflow-y-auto"
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{
-          background: 'var(--surface)', borderRadius: 14, maxWidth: 720, width: '100%',
-          boxShadow: '0 30px 80px rgba(0,0,0,0.18)', overflow: 'hidden',
-        }}
+        className="bg-surface rounded-[14px] max-w-[720px] w-full shadow-[0_30px_80px_rgba(0,0,0,0.18)] overflow-hidden"
       >
         {/* Header */}
-        <div style={{
-          padding: '20px 24px', borderBottom: '1px solid var(--line)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
+        <div className="px-6 py-5 border-b border-line flex justify-between items-center">
           <div>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--accent)' }}>
-              {fight.event.toUpperCase()} · {fight.card.toUpperCase()}
+            <div className="text-[11px] font-extrabold tracking-[0.14em] text-accent">
+              {fight.event.toUpperCase()} · {fight.weightClass.toUpperCase()}
             </div>
-            <div style={{ fontSize: 13, color: 'var(--ink-dim)', marginTop: 4 }}>
-              {fight.date} · {fight.venue}
-            </div>
+            <div className="text-[13px] text-ink-dim mt-1">{fight.date} · {fight.location}</div>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'var(--bg)', border: 'none', borderRadius: 8,
-              width: 32, height: 32, cursor: 'pointer', fontSize: 18, color: 'var(--ink-dim)',
-            }}
+            className="bg-bg border-0 rounded-lg w-8 h-8 cursor-pointer text-lg text-ink-dim hover:text-ink transition-colors"
           >×</button>
         </div>
 
-        <div style={{ padding: 24 }}>
-          {/* Fighter avatars + percentages */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 20, marginBottom: 20 }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: 68, height: 68, borderRadius: '50%', margin: '0 auto',
-                background: 'var(--accent-soft)',
-                border: `3px solid ${winnerCorner === 'red' ? 'var(--accent)' : 'var(--line)'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 20, fontWeight: 800, color: 'var(--accent)',
-              }}>{initials(redFighter.name)}</div>
-              <div style={{ fontSize: 16, fontWeight: 800, marginTop: 10 }}>{redFighter.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-mute)' }}>{redFighter.record} · {redFighter.weightClass}</div>
-              <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--accent)', marginTop: 6 }}>{aPct}%</div>
-            </div>
-
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink-mute)' }}>VS</div>
-
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: 68, height: 68, borderRadius: '50%', margin: '0 auto',
-                background: 'var(--blue-soft)',
-                border: `3px solid ${winnerCorner === 'blue' ? 'var(--blue)' : 'var(--line)'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 20, fontWeight: 800, color: 'var(--blue)',
-              }}>{initials(blueFighter.name)}</div>
-              <div style={{ fontSize: 16, fontWeight: 800, marginTop: 10 }}>{blueFighter.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-mute)' }}>{blueFighter.record} · {blueFighter.weightClass}</div>
-              <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--blue)', marginTop: 6 }}>{bPct}%</div>
-            </div>
+        <div className="p-6">
+          {/* Fighter columns */}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-5 mb-5">
+            <FighterColumn fighter={redFighter}  isWinner={winnerIsRed}  isRed={true}  pct={aPct} />
+            <div className="text-[13px] font-extrabold text-ink-mute">VS</div>
+            <FighterColumn fighter={blueFighter} isWinner={!winnerIsRed} isRed={false} pct={bPct} />
           </div>
 
           {/* Split bar */}
-          <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden' }}>
-            <div style={{ width: `${aPct}%`, background: 'var(--accent)' }} />
-            <div style={{ width: `${bPct}%`, background: 'var(--blue)' }} />
+          <div className="flex h-3 rounded-md overflow-hidden">
+            <div className="bg-accent" style={{ width: `${aPct}%` }} />
+            <div className="bg-blue"   style={{ width: `${bPct}%` }} />
           </div>
 
           {/* Oracle pick */}
-          <div style={{
-            marginTop: 18, padding: '12px 16px', background: 'var(--bg)', borderRadius: 10,
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: winnerColor }}>ORACLE PICK</div>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>
-              {winnerName} by {confidence}% confidence
+          <div className="mt-[18px] px-4 py-3 bg-section border border-line rounded-[10px] flex items-center gap-3">
+            <div className={`text-[11px] font-extrabold tracking-[0.14em] ${winnerIsRed ? 'text-accent' : 'text-blue'}`}>
+              ORACLE PICK
             </div>
+            <div className="text-[15px] font-bold">{winnerName} by {confidence}% confidence</div>
           </div>
 
           {/* Key comparison */}
-          <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--ink-dim)', marginBottom: 10 }}>
-              KEY COMPARISON
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {rows.map(([label, va, vb]) => (
-                <div key={label} style={{
-                  display: 'grid', gridTemplateColumns: '1fr auto 1fr',
-                  gap: 12, alignItems: 'center', fontSize: 13,
-                }}>
-                  <div style={{ textAlign: 'right', fontWeight: 700 }}>{va}</div>
-                  <div style={{ fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-mute)', textTransform: 'uppercase' }}>{label}</div>
-                  <div style={{ fontWeight: 700 }}>{vb}</div>
+          <div className="mt-5">
+            <div className="text-[11px] font-extrabold tracking-[0.14em] text-ink-dim mb-2.5">KEY COMPARISON</div>
+            <div className="flex flex-col gap-1.5">
+              {compRows.map(([label, va, vb]) => (
+                <div key={label} className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center text-[13px]">
+                  <div className="text-right font-bold">{va}</div>
+                  <div className="text-[10px] tracking-[0.14em] text-ink-mute uppercase">{label}</div>
+                  <div className="font-bold">{vb}</div>
                 </div>
               ))}
             </div>
@@ -145,31 +130,11 @@ export default function FightDialog({ prediction, onClose }: Props) {
 
           {/* Factors */}
           {factors.length > 0 && (
-            <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--ink-dim)', marginBottom: 10 }}>
-                TOP DECIDING FACTORS
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="mt-5">
+              <div className="text-[11px] font-extrabold tracking-[0.14em] text-ink-dim mb-2.5">TOP DECIDING FACTORS</div>
+              <div className="flex flex-col gap-2">
                 {factors.map((f, i) => (
-                  <div key={f.label} style={{
-                    padding: '12px 14px', background: 'var(--bg)', borderRadius: 8,
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{
-                        width: 22, height: 22, borderRadius: '50%',
-                        background: i === 0 ? winnerColor : 'var(--line-strong)',
-                        color: i === 0 ? 'white' : 'var(--ink-dim)',
-                        fontSize: 11, fontWeight: 700,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>{i + 1}</span>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600 }}>{f.label}</div>
-                        <div style={{ fontSize: 11, color: 'var(--ink-mute)' }}>{f.sub}</div>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: winnerColor }}>+{f.delta.toFixed(1)}</div>
-                  </div>
+                  <FactorRow key={f.label} factor={f} rank={i} winnerIsRed={winnerIsRed} />
                 ))}
               </div>
             </div>

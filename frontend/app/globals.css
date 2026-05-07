@@ -1,28 +1,29 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #e8e8e4;
-  --surface: #ffffff;
-  --line: #d0d0c8;
-  --line-strong: #b8b8b0;
-  --card-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px var(--line);
-  --ink: #141414;
-  --ink-dim: #6b6b64;
-  --ink-mute: #9a9a92;
-  --accent: #e8003d;
-  --accent-soft: #ffe8ee;
-  --blue: #2563eb;
-  --blue-soft: #e6efff;
+@theme {
+  --color-bg: #e8e8e4;
+  --color-surface: #ffffff;
+  --color-section: #f4f4f1;
+  --color-line: #d0d0c8;
+  --color-line-strong: #a8a8a0;
+  --color-ink: #141414;
+  --color-ink-dim: #4a4a44;
+  --color-ink-mute: #767670;
+  --color-accent: #e8003d;
+  --color-accent-soft: #ffe8ee;
+  --color-blue: #2563eb;
+  --color-blue-soft: #e6efff;
+
+  --shadow-card: 0 1px 4px rgba(0,0,0,0.09), 0 0 0 1px var(--color-line);
+
+  --animate-fade-up: fade-up 400ms cubic-bezier(.2,.8,.2,1) both;
 }
 
-* { box-sizing: border-box; }
-
+/* Fallback: ensure body colors are always applied, even if Tailwind utility
+   generation is lagging (e.g. stale Turbopack cache). */
 html, body {
-  margin: 0;
-  padding: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
@@ -30,13 +31,9 @@ html, body {
 
 button, input { font-family: inherit; }
 input:focus { outline: none; }
-::selection { background: var(--accent); color: white; }
+::selection { background: var(--color-accent); color: white; }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes fadeUp {
+@keyframes fade-up {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }

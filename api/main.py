@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from api.model import predict_fight, get_fighter_info, ALL_FIGHTERS, FIGHTERS_SET, MODEL_ACCURACY, TOTAL_FIGHTS, FEATURES
+from api.upcoming import get_upcoming_fights
 
 app = FastAPI(title="MMA Fight Predictor API")
 
@@ -60,3 +61,26 @@ def predict(req: PredictRequest):
     if req.red_fighter == req.blue_fighter:
         raise HTTPException(status_code=400, detail="Kies twee verschillende vechters")
     return predict_fight(req.red_fighter, req.blue_fighter)
+
+@app.get("/upcoming")
+def get_upcoming():
+    """Aankomende UFC fights + voorspellingen."""
+    fights = get_upcoming_fights()
+
+    results = []
+    for fight in fights:
+        red  = fight["redFighter"]
+        blue = fight["blueFighter"]
+
+        in_dataset = red in FIGHTERS_SET and blue in FIGHTERS_SET
+        prediction = None
+
+        if in_dataset:
+            try:
+                prediction = predict_fight(red, blue)
+            except Exception:
+                pass
+
+        results.append({**fight, "inDataset": in_dataset, "prediction": prediction})
+
+    return {"fights": results}

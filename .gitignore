@@ -2,7 +2,8 @@
 .idea/
 
 # Data bestanden
-data/
+data/*.csv
+data/raw/
 
 .DS_Store
 
