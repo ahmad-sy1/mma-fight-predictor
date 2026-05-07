@@ -20,7 +20,6 @@ export interface Fighter {
   avgCtrlSec: number
   avgKD: number
   recentWins: number
-  // Optioneel — niet in onze database
   age?: number
   heightCms?: number
   reachCms?: number
@@ -38,6 +37,7 @@ export interface ModelInfo {
 export interface PredictionFactor {
   label: string
   delta: number
+  sub?: string
 }
 
 export interface PredictionResult {

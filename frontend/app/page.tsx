@@ -1,29 +1,32 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Header from './components/Header'
 import FighterSearch from './components/FighterSearch'
 import PredictButton from './components/PredictButton'
 import ResultCard from './components/ResultCard'
 import DiffTable from './components/DiffTable'
-import UpcomingCard from './components/UpcomingCard'
-import FightDialog from './components/FightDialog'
-import { Fighter, ModelInfo, PredictionFactor, PredictionResult, UpcomingFight, UpcomingPrediction } from './types'
+import { Fighter, ModelInfo, PredictionResult } from './types'
+import { API_URL } from './lib/constants'
 
-const API_URL = 'http://localhost:8000'
+const SAMPLE_FIGHTS = [
+  ['Jon Jones', 'Stipe Miocic'],
+  ['Conor McGregor', 'Dustin Poirier'],
+  ['Israel Adesanya', 'Robert Whittaker'],
+]
 
-
-/* ---------- Predict page ---------- */
-function PredictPage({ modelInfo }: { modelInfo: ModelInfo | null }) {
-  const [queryA, setQueryA]   = useState('')
-  const [queryB, setQueryB]   = useState('')
+function usePrediction() {
   const [fighterA, setFighterA] = useState<Fighter | null>(null)
   const [fighterB, setFighterB] = useState<Fighter | null>(null)
   const [loadingA, setLoadingA] = useState(false)
   const [loadingB, setLoadingB] = useState(false)
   const [predicting, setPredicting] = useState(false)
-  const [result, setResult]   = useState<PredictionResult | null>(null)
-  const [error, setError]     = useState<string | null>(null)
+  const [result, setResult] = useState<PredictionResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null)
+
+  useEffect(() => {
+    fetch(`${API_URL}/model/info`).then(r => r.json()).then(setModelInfo).catch(() => {})
+  }, [])
 
   const fetchFighter = async (
     name: string,
@@ -40,9 +43,6 @@ function PredictPage({ modelInfo }: { modelInfo: ModelInfo | null }) {
     } catch { setFighter(null) }
     finally { setLoading(false) }
   }
-
-  const commitA = (name: string) => { setQueryA(name); setResult(null); fetchFighter(name, setFighterA, setLoadingA, 'red') }
-  const commitB = (name: string) => { setQueryB(name); setResult(null); fetchFighter(name, setFighterB, setLoadingB, 'blue') }
 
   const canPredict = !!fighterA && !!fighterB && fighterA.name !== fighterB.name && !loadingA && !loadingB
 
@@ -74,6 +74,31 @@ function PredictPage({ modelInfo }: { modelInfo: ModelInfo | null }) {
     } finally { setPredicting(false) }
   }
 
+  return {
+    fighterA, setFighterA, loadingA, setLoadingA,
+    fighterB, setFighterB, loadingB, setLoadingB,
+    predicting, result, setResult,
+    error, setError,
+    modelInfo, canPredict, runPredict,
+    fetchFighter,
+  }
+}
+
+export default function PredictPage() {
+  const [queryA, setQueryA] = useState('')
+  const [queryB, setQueryB] = useState('')
+  const {
+    fighterA, setFighterA, loadingA, setLoadingA,
+    fighterB, setFighterB, loadingB, setLoadingB,
+    predicting, result, setResult,
+    error, setError,
+    modelInfo, canPredict, runPredict,
+    fetchFighter,
+  } = usePrediction()
+
+  const commitA = (name: string) => { setQueryA(name); setResult(null); fetchFighter(name, setFighterA, setLoadingA, 'red') }
+  const commitB = (name: string) => { setQueryB(name); setResult(null); fetchFighter(name, setFighterB, setLoadingB, 'blue') }
+
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && canPredict && !predicting) runPredict()
@@ -83,62 +108,44 @@ function PredictPage({ modelInfo }: { modelInfo: ModelInfo | null }) {
   }, [canPredict, predicting, fighterA, fighterB])
 
   return (
-    <main style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 24px 80px' }}>
-      <div style={{ textAlign: 'center', marginBottom: 36 }}>
-        <h1 style={{ fontSize: 42, fontWeight: 800, lineHeight: 1.1, margin: 0, letterSpacing: '-0.02em' }}>
+    <main className="max-w-[1100px] mx-auto px-6 pt-12 pb-20">
+      <div className="text-center mb-9">
+        <h1 className="text-[42px] font-extrabold leading-[1.1] m-0 tracking-[-0.02em]">
           Who wins the fight?
         </h1>
-        <p style={{ color: 'var(--ink-dim)', fontSize: 15, marginTop: 10, maxWidth: 520, margin: '10px auto 0' }}>
+        <p className="text-ink-dim text-[15px] mt-2.5 max-w-[520px] mx-auto">
           Pick two UFC fighters. We compare records, striking, grappling, and more to predict the winner.
         </p>
       </div>
 
-      {/* Fighter cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 16, alignItems: 'start' }}>
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-start">
         <FighterSearch corner="red"  fighter={fighterA} query={queryA} setQuery={setQueryA} onCommit={commitA} loading={loadingA} />
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, paddingTop: 80 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: '50%',
-            background: 'var(--surface)', border: `2px solid ${canPredict ? 'var(--accent)' : 'var(--line)'}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 900, color: canPredict ? 'var(--accent)' : 'var(--ink-mute)',
-            transition: 'border-color 300ms, color 300ms',
-          }}>VS</div>
+        <div className="flex items-center justify-center w-12 pt-20">
+          <div className={`w-10 h-10 rounded-full bg-surface border-2 flex items-center justify-center text-xs font-black transition-all duration-300 ${
+            canPredict ? 'border-accent text-accent' : 'border-line text-ink-mute'
+          }`}>VS</div>
         </div>
-
         <FighterSearch corner="blue" fighter={fighterB} query={queryB} setQuery={setQueryB} onCommit={commitB} loading={loadingB} />
       </div>
 
-      {/* Predict button */}
-      <div style={{ marginTop: 16 }}>
+      <div className="mt-4">
         <PredictButton enabled={canPredict} loading={predicting} onClick={runPredict} />
       </div>
 
-      {/* Hint */}
       {!result && !error && (
-        <p style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 600, letterSpacing: '0.1em', textAlign: 'center', marginTop: 12 }}>
+        <p className="text-[11px] text-ink-mute font-extrabold tracking-[0.1em] text-center mt-3">
           {canPredict ? '⌘ + ENTER TO PREDICT' : 'SEARCH TWO FIGHTERS TO BEGIN'}
         </p>
       )}
 
-      {/* Quick picks */}
       {!result && !predicting && (
-        <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--ink-dim)', alignSelf: 'center' }}>Try:</span>
-          {[
-            ['Jon Jones', 'Stipe Miocic'],
-            ['Conor McGregor', 'Dustin Poirier'],
-            ['Israel Adesanya', 'Robert Whittaker'],
-          ].map(([a, b]) => (
+        <div className="mt-4 flex flex-wrap gap-2 justify-center">
+          <span className="text-xs text-ink-dim self-center">Try:</span>
+          {SAMPLE_FIGHTS.map(([a, b]) => (
             <button
               key={a + b}
               onClick={() => { commitA(a); commitB(b); setResult(null) }}
-              style={{
-                background: 'var(--surface)', border: '1px solid var(--line)',
-                padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500,
-                color: 'var(--ink-dim)', cursor: 'pointer',
-              }}
+              className="bg-surface border border-line px-3 py-1.5 rounded-full text-xs font-medium text-ink-dim cursor-pointer hover:text-ink hover:border-line-strong transition-colors"
             >
               {a.split(' ').slice(-1)[0]} vs {b.split(' ').slice(-1)[0]}
             </button>
@@ -146,163 +153,19 @@ function PredictPage({ modelInfo }: { modelInfo: ModelInfo | null }) {
         </div>
       )}
 
-      {/* Diff table (shown when both fighters loaded, no result yet) */}
       {fighterA && fighterB && fighterA.name !== fighterB.name && !result && !predicting && (
         <DiffTable a={fighterA} b={fighterB} />
       )}
 
-      {/* Error */}
       {error && (
-        <div style={{
-          marginTop: 20, padding: '14px 20px', background: 'var(--accent-soft)',
-          border: '1px solid var(--accent)', borderRadius: 8,
-          color: 'var(--accent)', fontSize: 13, fontWeight: 600,
-        }}>⚠ {error}</div>
+        <div className="mt-5 px-5 py-3.5 bg-accent-soft border border-accent rounded-lg text-accent text-[13px] font-semibold">
+          ⚠ {error}
+        </div>
       )}
 
-      {/* Result */}
       <div id="result">
         {result && <ResultCard result={result} modelInfo={modelInfo} onReset={() => { setResult(null); setError(null) }} />}
       </div>
     </main>
-  )
-}
-
-/* ---------- Upcoming page ---------- */
-function UpcomingPage() {
-  const [fights, setFights]           = useState<UpcomingFight[]>([])
-  const [predictions, setPredictions] = useState<(UpcomingPrediction | null)[]>([])
-  const [loading, setLoading]         = useState(true)
-  const [open, setOpen]               = useState<UpcomingPrediction | null>(null)
-
-  useEffect(() => {
-    fetch(`${API_URL}/upcoming`)
-      .then(r => r.json())
-      .then(data => {
-        const raw = data.fights as Array<{
-          event: string; date: string; location: string; weightClass: string
-          redFighter: string; blueFighter: string
-          inDataset: boolean; prediction: Record<string, unknown> | null
-        }>
-
-        const mappedFights: UpcomingFight[] = raw.map(f => ({
-          event: f.event, date: f.date, location: f.location,
-          weightClass: f.weightClass, redFighter: f.redFighter, blueFighter: f.blueFighter,
-        }))
-
-        const mappedPreds: (UpcomingPrediction | null)[] = raw.map((f, i) => {
-          if (!f.inDataset || !f.prediction) return null
-          const p = f.prediction as Record<string, unknown>
-          return {
-            fight:        mappedFights[i],
-            redFighter:   { ...(p.red_fighter  as Fighter), corner: 'red'  as const },
-            blueFighter:  { ...(p.blue_fighter as Fighter), corner: 'blue' as const },
-            winnerCorner: p.winner_corner as 'red' | 'blue',
-            confidence:   p.confidence as number,
-            factors:      p.factors as PredictionFactor[],
-          }
-        })
-
-        setFights(mappedFights)
-        setPredictions(mappedPreds)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
-
-  return (
-    <main style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 24px 80px' }}>
-      <div style={{ marginBottom: 36 }}>
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.16em', color: 'var(--accent)' }}>UPCOMING FIGHTS</div>
-        <h1 style={{ fontSize: 38, fontWeight: 800, lineHeight: 1.1, margin: '6px 0 10px', letterSpacing: '-0.02em' }}>
-          Next on the card
-        </h1>
-        <p style={{ color: 'var(--ink-dim)', fontSize: 15, maxWidth: 560 }}>
-          Oracle predictions for upcoming matchups. Click any fight for the full stat breakdown.
-        </p>
-      </div>
-
-      {loading ? (
-        <div style={{ color: 'var(--ink-dim)', fontSize: 14, textAlign: 'center', padding: '60px 0' }}>
-          Loading upcoming fights…
-        </div>
-      ) : fights.length === 0 ? (
-        <div style={{ color: 'var(--ink-dim)', fontSize: 14, textAlign: 'center', padding: '60px 0' }}>
-          No upcoming fights found.
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          {fights.map((fight, i) => {
-            const pred = predictions[i]
-            return pred ? (
-              <UpcomingCard key={i} prediction={pred} onClick={() => setOpen(pred)} />
-            ) : (
-              <div key={i} style={{
-                background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12,
-                padding: 20, minHeight: 140,
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--accent)', marginBottom: 4 }}>
-                  {fight.event.toUpperCase()}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--ink-dim)', marginBottom: 14 }}>
-                  {fight.date} · {fight.location}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700 }}>
-                  <span>{fight.redFighter}</span>
-                  <span style={{ color: 'var(--ink-mute)', fontWeight: 400, fontSize: 12 }}>vs</span>
-                  <span>{fight.blueFighter}</span>
-                </div>
-                <div style={{ marginTop: 10, fontSize: 12, color: 'var(--ink-mute)' }}>
-                  {fight.weightClass} · Not in dataset — no prediction available
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {open && <FightDialog prediction={open} onClose={() => setOpen(null)} />}
-    </main>
-  )
-}
-
-/* ---------- About page ---------- */
-function AboutPage() {
-  return (
-    <main style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px 80px' }}>
-      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.16em', color: 'var(--accent)', marginBottom: 8 }}>ABOUT</div>
-      <h1 style={{ fontSize: 36, fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.02em' }}>Fight Oracle</h1>
-      <p style={{ color: 'var(--ink-dim)', fontSize: 15, lineHeight: 1.7, marginBottom: 16 }}>
-        Fight Oracle uses a Random Forest model trained on over 5,000 historical UFC bouts to predict fight outcomes.
-        It analyses 17 statistical features — striking output, grappling, win streaks, physical attributes, and more —
-        to calculate win probability for any two fighters in the dataset.
-      </p>
-      <p style={{ color: 'var(--ink-dim)', fontSize: 15, lineHeight: 1.7 }}>
-        This is a data science project. Predictions are based on historical patterns and are for entertainment purposes only.
-        Not betting advice.
-      </p>
-    </main>
-  )
-}
-
-/* ---------- Root ---------- */
-export default function Home() {
-  const [page, setPage] = useState('predict')
-  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null)
-
-  useEffect(() => {
-    fetch(`${API_URL}/model/info`)
-      .then(r => r.json())
-      .then(setModelInfo)
-      .catch(() => {})
-  }, [])
-
-  return (
-    <div style={{ minHeight: '100vh' }}>
-      <Header page={page} setPage={setPage} />
-      {page === 'predict'  && <PredictPage modelInfo={modelInfo} />}
-      {page === 'upcoming' && <UpcomingPage />}
-      {page === 'about'    && <AboutPage />}
-    </div>
   )
 }

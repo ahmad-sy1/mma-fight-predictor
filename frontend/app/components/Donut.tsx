@@ -4,13 +4,12 @@ import { useState, useEffect } from 'react'
 
 interface Props {
   pct: number
-  color?: string
   size?: number
   stroke?: number
   label?: string
 }
 
-export default function Donut({ pct, color = 'var(--accent)', size = 56, stroke = 6, label }: Props) {
+export default function Donut({ pct, size = 56, stroke = 6, label }: Props) {
   const [display, setDisplay] = useState(0)
 
   useEffect(() => {
@@ -23,23 +22,19 @@ export default function Donut({ pct, color = 'var(--accent)', size = 56, stroke 
   const off = c * (1 - display / 100)
 
   return (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--line)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-line)" strokeWidth={stroke} />
         <circle
           cx={size / 2} cy={size / 2} r={r}
-          fill="none" stroke={color} strokeWidth={stroke}
+          fill="none" stroke="currentColor" strokeWidth={stroke}
           strokeDasharray={c} strokeDashoffset={off}
           strokeLinecap="round"
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
           style={{ transition: 'stroke-dashoffset 800ms cubic-bezier(.2,.8,.2,1)' }}
         />
       </svg>
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 12, fontWeight: 800, color: 'var(--ink)',
-      }}>
+      <div className="absolute inset-0 flex items-center justify-center text-xs font-extrabold text-ink">
         {label ?? `${Math.round(display)}%`}
       </div>
     </div>

@@ -1,44 +1,41 @@
 'use client'
 
-interface Props {
-  page: string
-  setPage: (p: string) => void
-}
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
-export default function Header({ page, setPage }: Props) {
+const navLinks: [string, string][] = [
+  ['/', 'Predict'],
+  ['/upcoming', 'Upcoming'],
+  ['/about', 'About'],
+]
+
+export default function Header() {
+  const pathname = usePathname()
+
   return (
-    <header style={{
-      padding: '18px 32px',
-      borderBottom: '1px solid var(--line)',
-      background: 'var(--surface)',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      position: 'sticky', top: 0, zIndex: 50,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 30, height: 30, borderRadius: 8, background: 'var(--accent)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'white', fontWeight: 800, fontSize: 16,
-        }}>F</div>
-        <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.01em' }}>
-          Fight Oracle
-        </span>
+    <header className="py-[18px] px-8 border-b border-line bg-surface flex items-center justify-between sticky top-0 z-50">
+      <div className="flex items-center gap-2.5">
+        <div className="w-[30px] h-[30px] rounded-lg bg-accent flex items-center justify-center text-white font-extrabold text-base">
+          F
+        </div>
+        <span className="text-[17px] font-extrabold tracking-[-0.01em]">Fight Oracle</span>
       </div>
 
-      <nav style={{ display: 'flex', gap: 28 }}>
-        {[['predict', 'Predict'], ['upcoming', 'Upcoming'], ['about', 'About']].map(([key, name]) => (
-          <a
-            key={key}
-            href="#"
-            onClick={e => { e.preventDefault(); setPage(key) }}
-            style={{
-              color: page === key ? 'var(--ink)' : 'var(--ink-dim)',
-              textDecoration: 'none', fontSize: 14, fontWeight: 600,
-              borderBottom: page === key ? '2px solid var(--accent)' : '2px solid transparent',
-              paddingBottom: 4,
-            }}
-          >{name}</a>
-        ))}
+      <nav className="flex gap-7">
+        {navLinks.map(([href, name]) => {
+          const active = pathname === href
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`no-underline text-sm font-semibold pb-1 border-b-2 transition-colors duration-200 ${
+                active ? 'text-ink border-accent' : 'text-ink-dim border-transparent'
+              }`}
+            >
+              {name}
+            </Link>
+          )
+        })}
       </nav>
     </header>
   )

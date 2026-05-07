@@ -8,47 +8,37 @@ interface Props {
 type Direction = 'higher' | 'lower'
 
 const rows: [string, (f: Fighter) => number | string, Direction][] = [
-  ['Win streak',        f => f.winStreak,                          'higher'],
-  ['Longest win streak',f => f.longestWinStreak,                   'higher'],
-  ['Wins',              f => f.wins,                               'higher'],
-  ['Losses',            f => f.losses,                             'lower'],
-  ['Total rounds',      f => f.totalRounds,                        'higher'],
-  ['Title bouts',       f => f.titleBouts,                         'higher'],
-  ['KO wins',           f => f.koWins,                             'higher'],
-  ['Sub wins',          f => f.subWins,                            'higher'],
-  ['Height (cm)',        f => f.heightCms,                          'higher'],
-  ['Reach (cm)',         f => f.reachCms,                           'higher'],
-  ['Age',               f => f.age,                                'lower'],
-  ['Sig str / min',     f => f.avgSigStr,                          'higher'],
-  ['Str accuracy %',    f => f.sigStrAcc,                          'higher'],
-  ['TD avg',            f => f.avgTD,                              'higher'],
-  ['TD accuracy %',     f => f.tdAcc,                              'higher'],
-  ['Sub att / 15 min',  f => f.avgSubAtt,                          'higher'],
+  ['Win streak',        f => f.winStreak,         'higher'],
+  ['Longest win streak',f => f.longestWinStreak,  'higher'],
+  ['Wins',              f => f.wins,              'higher'],
+  ['Losses',            f => f.losses,            'lower'],
+  ['Total rounds',      f => f.totalRounds ?? 0,  'higher'],
+  ['Title bouts',       f => f.titleBouts,        'higher'],
+  ['KO wins',           f => f.koWins,            'higher'],
+  ['Sub wins',          f => f.subWins,           'higher'],
+  ['Height (cm)',        f => f.heightCms ?? 0,    'higher'],
+  ['Reach (cm)',         f => f.reachCms ?? 0,     'higher'],
+  ['Age',               f => f.age ?? 0,          'lower'],
+  ['Sig str / min',     f => f.avgSigStr,         'higher'],
+  ['Str accuracy %',    f => f.sigStrAcc,         'higher'],
+  ['TD avg',            f => f.avgTD,             'higher'],
+  ['TD accuracy %',     f => f.tdAcc,             'higher'],
+  ['Sub att / 15 min',  f => f.avgSubAtt,         'higher'],
 ]
 
 export default function DiffTable({ a, b }: Props) {
   return (
-    <div style={{
-      background: 'var(--surface)',
-      boxShadow: 'var(--card-shadow)',
-      borderRadius: 12,
-      padding: 20,
-      marginTop: 16,
-    }}>
-      <div style={{
-        fontSize: 11, fontWeight: 800, letterSpacing: '0.16em',
-        color: 'var(--ink-dim)', marginBottom: 14,
-      }}>
+    <div className="bg-surface shadow-card rounded-xl p-5 mt-4">
+      <div className="text-[11px] font-extrabold tracking-[0.16em] text-ink-dim mb-3.5">
         HEAD-TO-HEAD DIFFERENTIAL
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '3px 16px', fontSize: 13 }}>
-        {/* header */}
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--accent)', textAlign: 'right' }}>
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-x-4 gap-y-[3px] text-[13px]">
+        <div className="text-[10px] font-extrabold tracking-[0.14em] text-accent text-right">
           {a.name.toUpperCase()}
         </div>
         <div />
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--blue)' }}>
+        <div className="text-[10px] font-extrabold tracking-[0.14em] text-blue">
           {b.name.toUpperCase()}
         </div>
 
@@ -62,18 +52,15 @@ export default function DiffTable({ a, b }: Props) {
 
           return (
             <>
-              <div key={`${label}-a`} style={{
-                textAlign: 'right', fontWeight: aWins ? 800 : 500,
-                color: aWins ? 'var(--accent)' : 'var(--ink-dim)', padding: '3px 0',
-              }}>{va}</div>
-              <div key={`${label}-l`} style={{
-                fontSize: 10.5, color: 'var(--ink-mute)', textAlign: 'center',
-                alignSelf: 'center', letterSpacing: '0.08em', textTransform: 'uppercase',
-              }}>{label}</div>
-              <div key={`${label}-b`} style={{
-                fontWeight: bWins ? 800 : 500,
-                color: bWins ? 'var(--blue)' : 'var(--ink-dim)', padding: '3px 0',
-              }}>{vb}</div>
+              <div key={`${label}-a`} className={`text-right py-[3px] ${aWins ? 'font-extrabold text-accent' : 'font-medium text-ink-dim'}`}>
+                {va}
+              </div>
+              <div key={`${label}-l`} className="text-[10.5px] text-ink-mute text-center self-center tracking-[0.08em] uppercase">
+                {label}
+              </div>
+              <div key={`${label}-b`} className={`py-[3px] ${bWins ? 'font-extrabold text-blue' : 'font-medium text-ink-dim'}`}>
+                {vb}
+              </div>
             </>
           )
         })}
