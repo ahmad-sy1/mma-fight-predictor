@@ -59,7 +59,7 @@ def fetch_fighter_fights(name: str) -> list[dict]:
             "ground_land":   f.get("blue_ground_land",   0) or 0,
         })
 
-    fights.sort(key=lambda x: x["inserted_at"])
+    fights.sort(key=lambda x: x["inserted_at"], reverse=True)
     return fights
 
 

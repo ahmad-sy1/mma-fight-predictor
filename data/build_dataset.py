@@ -173,7 +173,7 @@ def build_dataset(df):
     print("Building dataset...")
 
     # Sorteer op inserted_at zodat we chronologisch werken
-    df = df.sort_values("inserted_at").reset_index(drop=True)
+    df = df.sort_values("inserted_at", ascending=False).reset_index(drop=True)
 
     trackers = defaultdict(FighterTracker)
     rows_out = []
