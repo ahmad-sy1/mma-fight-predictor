@@ -18,18 +18,12 @@ export default function UpcomingCard({ prediction, onClick }: Props) {
       onClick={onClick}
       className="bg-surface shadow-card rounded-xl p-5 cursor-pointer transition-all duration-[160ms] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12),0_0_0_1px_var(--color-accent)] hover:-translate-y-0.5"
     >
-      {/* Event header */}
+      {/* Weight class */}
       <div className="flex justify-between items-center mb-3.5 pb-3 border-b border-line">
-        <div>
-          <div className="text-[11px] font-extrabold tracking-[0.14em] text-accent">
-            {fight.event.toUpperCase()}
-          </div>
-          <div className="text-xs text-ink-dim mt-0.5">{fight.weightClass}</div>
+        <div className="text-[11px] font-extrabold tracking-[0.14em] text-ink-mute">
+          {fight.weightClass}
         </div>
-        <div className="text-right">
-          <div className="text-[13px] font-bold">{fight.date}</div>
-          <div className="text-[11px] text-ink-mute">{fight.location}</div>
-        </div>
+        <div className="text-[11px] text-ink-mute">{fight.date}</div>
       </div>
 
       {/* Fighters */}

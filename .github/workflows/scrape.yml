@@ -18,11 +18,37 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Chrome installeren
+        uses: browser-actions/setup-chrome@v1
+
       - name: Dependencies installeren
-        run: pip install requests beautifulsoup4 supabase python-dotenv
+        run: pip install requests beautifulsoup4 supabase python-dotenv selenium undetected-chromedriver pandas numpy scikit-learn joblib
 
       - name: Nieuwe fights scrapen
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python -m backend.data.sync
+
+      - name: Upcoming fights syncen
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python -m backend.data.sync_upcoming
+
+      - name: Dataset bouwen
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python -m backend.data.build_dataset
+
+      - name: Model trainen
+        run: python -m backend.data.train_model
+
+      - name: Model committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backend/models/model_v4.pkl backend/models/feature_names_v4.json
+          git diff --staged --quiet || git commit -m "chore: retrain model na nieuwe UFC data"
+          git push
