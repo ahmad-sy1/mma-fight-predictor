@@ -7,7 +7,7 @@ import time
 import sys
 from dotenv import load_dotenv
 from supabase import create_client
-from data.scraper import get, get_all_events, get_fight_urls, get_fight_details, save_fight
+from backend.data.scraper import get, get_all_events, get_fight_urls, get_fight_details, save_fight
 
 load_dotenv()
 

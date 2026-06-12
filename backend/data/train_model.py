@@ -3,16 +3,19 @@ Train RandomForestClassifier op ufc_clean.csv (eigen pipeline).
 Slaat op als models/model_v4.pkl + models/feature_names_v4.json
 """
 import pandas as pd
+from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import joblib, json
 
-df = pd.read_csv('data/ufc_clean.csv')
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+df = pd.read_csv(BASE_DIR / 'data' / 'ufc_clean.csv')
 print(f"Dataset: {df.shape}")
 print(f"Winner verdeling:\n{df['Winner'].value_counts()}")
 
-with open('models/feature_names_v4.json') as f:
+with open(BASE_DIR / 'models' / 'feature_names_v4.json') as f:
     features = json.load(f)
 
 # Alleen rijen zonder NaN in features of target
@@ -33,6 +36,6 @@ model.fit(X_train, y_train)
 accuracy = accuracy_score(y_test, model.predict(X_test))
 print(f"\nAccuraatheid: {accuracy:.2%}")
 
-joblib.dump(model, 'models/model_v4.pkl')
-print(f"\n✅ Model opgeslagen → models/model_v4.pkl")
+joblib.dump(model, BASE_DIR / 'models' / 'model_v4.pkl')
+print(f"\n✅ Model opgeslagen → backend/models/model_v4.pkl")
 print(f"   Features: {len(features)}")

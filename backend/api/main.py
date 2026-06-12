@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from api.model import predict_fight, get_fighter_info, ALL_FIGHTERS, FIGHTERS_SET, MODEL_ACCURACY, TOTAL_FIGHTS, FEATURES
-from api.upcoming import get_upcoming_fights
+from backend.api.model import predict_fight, get_fighter_info, ALL_FIGHTERS, FIGHTERS_SET, MODEL_ACCURACY, TOTAL_FIGHTS, FEATURES
+from backend.api.upcoming import get_upcoming_fights
 
 app = FastAPI(title="MMA Fight Predictor API")
 

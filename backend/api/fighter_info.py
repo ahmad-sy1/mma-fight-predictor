@@ -1,4 +1,4 @@
-from api.fighter_stats import fetch_fighter_fights, compute_stats, supabase
+from backend.api.fighter_stats import fetch_fighter_fights, compute_stats, supabase
 
 
 def get_fighter_info(name: str) -> dict:

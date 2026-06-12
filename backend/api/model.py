@@ -4,8 +4,8 @@ import pandas as pd
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-from api.fighter_stats import fetch_fighter_fights, compute_stats
-from api.fighter_info import get_fighter_info
+from backend.api.fighter_stats import fetch_fighter_fights, compute_stats
+from backend.api.fighter_info import get_fighter_info
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

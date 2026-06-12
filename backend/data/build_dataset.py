@@ -5,6 +5,7 @@ Produces data/ufc_clean.csv with career averages + recent form + differentials.
 import os
 import pandas as pd
 import numpy as np
+from pathlib import Path
 from supabase import create_client
 from dotenv import load_dotenv
 from collections import defaultdict
@@ -13,7 +14,8 @@ load_dotenv()
 
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
-OUT = "data/ufc_clean.csv"
+BASE_DIR = Path(__file__).resolve().parent.parent
+OUT = str(BASE_DIR / 'data' / 'ufc_clean.csv')
 RECENT_N = 5  # aantal gevechten voor "recent form"
 
 
