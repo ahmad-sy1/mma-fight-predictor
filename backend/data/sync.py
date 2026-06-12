@@ -17,13 +17,13 @@ supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 def run_sync():
     all_events = get_all_events()
 
-    response = supabase.table("fights").select("event").order("event", desc=True).limit(1).execute()
-    latest_known = response.data[0]["event"] if response.data else None
-    print(f"📦 Laatste bekende event: {latest_known}")
+    response = supabase.table("fights").select("event").execute()
+    known_events = set(row["event"] for row in response.data)
+    print(f"📦 {len(known_events)} bekende events in database")
 
     new_events = []
     for event in all_events:
-        if event["name"] == latest_known:
+        if event["name"] in known_events:
             break
         new_events.append(event)
 

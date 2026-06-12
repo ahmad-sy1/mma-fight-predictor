@@ -5,7 +5,10 @@ en slaat het op in Supabase.
 import os
 import re
 import time
-import requests
+import undetected_chromedriver as uc
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from supabase import create_client
 from dotenv import load_dotenv
@@ -14,17 +17,30 @@ load_dotenv()
 
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
-SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": "Mozilla/5.0 (compatible; fight-oracle/1.0)"})
-
 BASE = "http://ufcstats.com"
+
+_driver = None
+
+def _get_driver():
+    global _driver
+    if _driver is None:
+        options = uc.ChromeOptions()
+        options.add_argument("--headless=new")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        _driver = uc.Chrome(options=options)
+    return _driver
 
 
 def get(url):
     try:
-        r = SESSION.get(url, timeout=10)
-        r.raise_for_status()
-        return BeautifulSoup(r.text, "html.parser")
+        driver = _get_driver()
+        driver.get(url)
+        # wacht tot pagina geladen is (geen "Loading..." meer)
+        WebDriverWait(driver, 15).until(
+            lambda d: d.title != "Loading…"
+        )
+        return BeautifulSoup(driver.page_source, "html.parser")
     except Exception as e:
         print(f"  ⚠️  Request failed: {url} — {e}")
         return None
