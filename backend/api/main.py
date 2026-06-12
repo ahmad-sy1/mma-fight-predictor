@@ -1,0 +1,86 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from backend.api.model import predict_fight, get_fighter_info, ALL_FIGHTERS, FIGHTERS_SET, MODEL_ACCURACY, TOTAL_FIGHTS, FEATURES
+from backend.api.upcoming import get_upcoming_fights
+
+app = FastAPI(title="MMA Fight Predictor API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "https://*.vercel.app"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+def root():
+    return {"status": "ok", "total_fighters": len(ALL_FIGHTERS)}
+
+
+@app.get("/model/info")
+def model_info():
+    return {
+        "accuracy": MODEL_ACCURACY,
+        "total_fights": TOTAL_FIGHTS,
+        "feature_count": len(FEATURES),
+    }
+
+
+@app.get("/fighters")
+def search_fighters(q: str = ""):
+    """Autocomplete: geeft namen terug die matchen met de zoekterm."""
+    if not q or len(q) < 2:
+        return {"fighters": ALL_FIGHTERS[:20]}
+    q_lower = q.lower()
+    results = [n for n in ALL_FIGHTERS if q_lower in n.lower()]
+    return {"fighters": results[:15]}
+
+
+@app.get("/fighters/{name}")
+def get_fighter(name: str):
+    """Statistieken voor één specifieke vechter."""
+    if name not in FIGHTERS_SET:
+        raise HTTPException(status_code=404, detail=f"Vechter niet gevonden: {name}")
+    return get_fighter_info(name)
+
+
+class PredictRequest(BaseModel):
+    red_fighter: str
+    blue_fighter: str
+
+
+@app.post("/predict")
+def predict(req: PredictRequest):
+    """Voorspel de winnaar op basis van twee namen."""
+    if req.red_fighter not in FIGHTERS_SET:
+        raise HTTPException(status_code=404, detail=f"Vechter niet gevonden: {req.red_fighter}")
+    if req.blue_fighter not in FIGHTERS_SET:
+        raise HTTPException(status_code=404, detail=f"Vechter niet gevonden: {req.blue_fighter}")
+    if req.red_fighter == req.blue_fighter:
+        raise HTTPException(status_code=400, detail="Kies twee verschillende vechters")
+    return predict_fight(req.red_fighter, req.blue_fighter)
+
+@app.get("/upcoming")
+def get_upcoming():
+    """Aankomende UFC fights + voorspellingen."""
+    fights = get_upcoming_fights()
+
+    results = []
+    for fight in fights:
+        red  = fight["redFighter"]
+        blue = fight["blueFighter"]
+
+        in_dataset = red in FIGHTERS_SET and blue in FIGHTERS_SET
+        prediction = None
+
+        if in_dataset:
+            try:
+                prediction = predict_fight(red, blue)
+            except Exception:
+                pass
+
+        results.append({**fight, "inDataset": in_dataset, "prediction": prediction})
+
+    return {"fights": results}
